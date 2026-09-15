@@ -42,7 +42,7 @@ Risk being retired: building against a misread x402 spec.
 | Node | 22 | `.nvmrc` |
 | pnpm | 9.12.3 | `package.json` `packageManager` |
 | Postgres | 16.4-alpine | `docker-compose.yml`, CI service |
-| Foundry | 1.8.1 (`stable` channel in CI) | `.github/actions/setup` — **to pin to a release once Phase 3 opens** |
+| Foundry | **v1.8.1**, sha256 `37b45855…89c10` | `.github/actions/setup` — pinned and checksum-verified |
 | forge-std | v1.16.2 (`bf647bd`) | `contracts/lib/forge-std`, git submodule |
 | gitleaks | 8.21.2 | `.pre-commit-config.yaml` |
 | `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4 — verified live on Base Sepolia |
@@ -100,7 +100,7 @@ Each is a `needs-jay` issue. Claude does not proceed past one by guessing.
 | — | **`docs/spec-notes.md` §8 now carries 9 numbered questions (Q1–Q9) from the research.** The most important is **Q1**: `parsePriceFeedUpdatesUnique` does not give the guarantee `PHASES.md` assumed, which makes resolution manipulable unless the window is chosen deliberately. | Phases 2–5 | _to open_ |
 | Qa | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
 | Qb | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
-| Qc | Foundry has no semver releases on the stable channel; pinning by date-tag or by commit? | Phase 3 | _to open_ |
+| Qc | ~~Foundry pinning~~ | — | answered 2026-09-15: pinned to the `v1.8.1` release tag with a published sha256, see #11 |
 | Q6 | The `main` ruleset now requires 0 approving reviews (ADR-0003), so a PR can merge without a human reading it. Revisit if a second reviewer account or review bot is ever added. | — | answered 2026-09-15 |
 
 ---
