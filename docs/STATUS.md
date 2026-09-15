@@ -24,7 +24,7 @@ Risk being retired: building against a misread x402 spec.
 | Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
 | `docs/spec-notes.md` | ✅ researched and cited — **9 open questions await Jay (§8)** |
 | GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
-| Guard proofs | 3 of 4 — see below |
+| Guard proofs | ✅ 4 of 4 — see below |
 | Release `phase-0` | not cut |
 
 ---
@@ -56,9 +56,9 @@ Risk being retired: building against a misread x402 spec.
 One row per `just gate <n>` run that was used to close a phase. Full output goes on the phase
 tracking issue.
 
-| Date | Phase | Commit | Rust | Solidity | TS | Coverage | Notes |
+| Date | Phase | Commit | Rust | Solidity | TS | DB | Notes |
 |---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | no gate has been run yet |
+| 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0` — in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
 
 ### Guard evidence (Phase 0 exit)
 
@@ -69,7 +69,7 @@ These prove the guards themselves work, and each needs a link before Phase 0 clo
 | `main` rejects direct pushes | see output below | ✅ 2026-09-15 |
 | gitleaks catches a planted key | `gitleaks protect --staged` on a planted 32-byte hex key → `leaks found: 1`, exit 1 | ✅ 2026-09-15 |
 | no-skips check catches an `#[ignore]` | planted `#[ignore]` in `lmsr` → `✗ disabled or focused tests found`, exit 1 | ✅ 2026-09-15 |
-| `required` blocks merge on red | deliberately failing PR, closed unmerged | _pending — needs one CI run first_ |
+| `required` blocks merge on red | PR #5, planted `WAD == 10^17`: `rust` failed, merge refused with `the base branch policy prohibits the merge`. Closed unmerged. | ✅ 2026-09-15 |
 
 Direct push to `main`, attempted 2026-09-15 with the ruleset active:
 
