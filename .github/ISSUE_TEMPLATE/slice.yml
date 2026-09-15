@@ -1,0 +1,55 @@
+name: Slice
+description: One unit of work that a single PR closes.
+title: "<area>: <behaviour>"
+labels: [slice]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A slice is one branch, one PR, one merge. If the work grows, open another slice —
+        do not widen the branch (CLAUDE.md section 2).
+
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      placeholder: "3"
+    validations: { required: true }
+
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: Behaviour
+      description: What will be true after this merges that is not true now? One paragraph.
+    validations: { required: true }
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Acceptance criteria — as test names
+      description: >
+        Each line is a test that will exist and pass. "Handles bad input" is not a test name;
+        `rejects_voucher_above_escrow_headroom` is. A reviewer should be able to `grep` for
+        every line here in the merged diff.
+      placeholder: |
+        - [ ] rejects_voucher_above_escrow_headroom
+        - [ ] releases_reservation_remainder_after_capture
+        - [ ] prop_reservation_never_exceeds_indexed_escrow (I7)
+      render: markdown
+    validations: { required: true }
+
+  - type: input
+    id: invariants
+    attributes:
+      label: Invariants touched
+      description: IDs from CLAUDE.md section 4. Write "none" if genuinely none.
+      placeholder: "I7, I8"
+    validations: { required: true }
+
+  - type: checkboxes
+    id: flags
+    attributes:
+      label: Before starting
+      options:
+        - label: Every wire-format and rounding decision here is answered by docs/spec-notes.md or a vector file (nothing is guessed)
+        - label: If an ADR is needed, it is written and merged before the implementation commit

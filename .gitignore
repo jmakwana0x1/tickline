@@ -1,0 +1,34 @@
+# Rust
+engine/target/
+**/*.rs.bk
+mutants.out*/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/dry-run/
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+.next/
+*.tsbuildinfo
+
+# Local services
+.anvil.pid
+.anvil.log
+.env
+.env.local
+
+# Coverage
+lcov.info
+coverage/
+llvm-cov-target/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json

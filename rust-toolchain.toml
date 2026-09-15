@@ -1,0 +1,5 @@
+# Pinned. Upgrades are their own PR with their own gate run (CLAUDE.md section 5).
+[toolchain]
+channel = "1.97.1"
+components = ["rustfmt", "clippy", "llvm-tools-preview"]
+profile = "minimal"

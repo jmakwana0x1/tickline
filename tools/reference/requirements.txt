@@ -1,0 +1,2 @@
+# Pinned: the reference oracle's precision is part of the test contract.
+mpmath==1.3.0

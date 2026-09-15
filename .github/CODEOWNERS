@@ -1,0 +1,15 @@
+# Jay reviews everything. These entries make the review requests explicit
+# for the files where a mistake is most expensive.
+
+*                       @jmakwana0x1
+
+# The rules themselves
+/CLAUDE.md              @jmakwana0x1
+/PHASES.md              @jmakwana0x1
+/docs/decisions/        @jmakwana0x1
+/.github/               @jmakwana0x1
+
+# Money
+/contracts/src/         @jmakwana0x1
+/engine/crates/lmsr/    @jmakwana0x1
+/engine/crates/ledger/  @jmakwana0x1

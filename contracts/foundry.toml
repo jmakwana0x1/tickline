@@ -1,0 +1,80 @@
+# Three profiles (PHASES.md phase 0):
+#   default — fast feedback while writing code
+#   ci      — what the gate runs; more fuzz runs, deeper invariant campaigns
+#   deep    — nightly and gate 7; long campaigns that find what `ci` misses
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+bytecode_hash = "none"          # reproducible bytecode for verification
+cbor_metadata = false
+gas_reports = ["TicklineVault"]
+# Money math: a silent truncation is a lost-funds bug. Warnings are errors in CI.
+deny_warnings = false
+fs_permissions = [{ access = "read", path = "../testdata" }]
+# No network in any suite except test/fork (CLAUDE.md section 2).
+no_match_path = "test/fork/*"
+
+[profile.default.fuzz]
+runs = 256
+max_test_rejects = 65536
+
+[profile.default.invariant]
+runs = 64
+depth = 64
+fail_on_revert = true           # an unexpected revert in a handler is a finding, not noise
+call_override = false
+shrink_run_limit = 5000
+
+[profile.ci]
+deny_warnings = true
+verbosity = 3
+
+[profile.ci.fuzz]
+runs = 5000
+max_test_rejects = 500000
+
+[profile.ci.invariant]
+runs = 256
+depth = 128
+fail_on_revert = true
+shrink_run_limit = 100000
+
+[profile.deep]
+deny_warnings = true
+
+[profile.deep.fuzz]
+runs = 250000
+
+[profile.deep.invariant]
+runs = 5000
+depth = 512
+fail_on_revert = true
+
+# Phase 8 only. The single suite allowed to touch the network.
+[profile.fork]
+no_match_path = ""
+match_path = "test/fork/*"
+eth_rpc_url = "${BASE_SEPOLIA_RPC_URL}"
+
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false
+int_types = "long"              # uint256, never uint
+quote_style = "double"
+number_underscore = "thousands"
+multiline_func_header = "params_first"
+sort_imports = true
+
+[rpc_endpoints]
+base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
+
+[etherscan]
+base_sepolia = { key = "${ETHERSCAN_API_KEY}", chain = 84532 }

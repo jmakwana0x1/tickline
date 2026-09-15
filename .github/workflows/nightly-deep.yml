@@ -1,0 +1,47 @@
+# Long campaigns. Allowed to fail without blocking merges — it opens an issue instead.
+# Gate 7 runs the same commands in the foreground, where they DO block.
+name: nightly-deep
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  deep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: ./.github/actions/setup
+      - run: just deep
+
+  mutants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with: { node: 'false', foundry: 'false' }
+      - run: cargo install cargo-mutants --locked
+      - run: just mutants
+
+  report:
+    if: always() && (needs.deep.result == 'failure' || needs.mutants.result == 'failure')
+    needs: [deep, mutants]
+    runs-on: ubuntu-latest
+    permissions: { issues: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: open an issue with the counterexample
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "nightly-deep failed on $(date -u +%F)" \
+            --label bug,invariant,needs-jay \
+            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Per CLAUDE.md section 2: any counterexample becomes a permanent unit test before
+          the current phase closes. Do not re-run to see if it passes."

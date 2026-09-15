@@ -1,0 +1,33 @@
+[package]
+name = "api"
+description = "axum HTTP surface and the engine binary."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "tickline-engine"
+path = "src/bin/tickline-engine.rs"
+
+[dependencies]
+lmsr.workspace = true
+protocol.workspace = true
+ledger.workspace = true
+market.workspace = true
+
+axum.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[lints]
+workspace = true

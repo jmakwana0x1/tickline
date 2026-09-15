@@ -1,0 +1,47 @@
+name: Phase tracking
+description: The single tracking issue for a phase. One per milestone.
+title: "Phase <n>: <name>"
+labels: [tracking, needs-jay]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Copied verbatim from PHASES.md.
+    validations: { required: true }
+
+  - type: input
+    id: risk
+    attributes:
+      label: Core risk this phase retires
+    validations: { required: true }
+
+  - type: textarea
+    id: slices
+    attributes:
+      label: Slice breakdown
+      description: >
+        One checkbox per slice issue, created from the Build and Tests sections of this phase
+        in PHASES.md. **Jay approves this breakdown before any code is written** — that is why
+        this issue opens labelled `needs-jay`.
+      render: markdown
+    validations: { required: true }
+
+  - type: textarea
+    id: gate
+    attributes:
+      label: Gate log
+      description: Paste the full `just gate <n>` output here when the phase is ready to close.
+      render: shell
+
+  - type: checkboxes
+    id: exit
+    attributes:
+      label: Exit criteria
+      options:
+        - label: Every slice issue in this milestone is closed through a merged PR
+        - label: "`just gate <n>` green locally and in CI, output pasted above"
+        - label: Open questions in docs/spec-notes.md for this phase are answered and signed off
+        - label: docs/STATUS.md updated (gate log, pinned versions, benchmarks)
+        - label: Jay has given an explicit go-ahead in a comment on this issue
+        - label: ".phase bumped, milestone closed, `gh release create phase-<n>` done"

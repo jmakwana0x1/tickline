@@ -1,0 +1,38 @@
+name: Needs Jay
+description: A decision Claude will not make alone. Work stops until this is answered.
+title: "needs-jay: <the question>"
+labels: [needs-jay]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open this instead of guessing. CLAUDE.md section 2 lists when: an unanswerable spec
+        question, an invariant that would have to change, a fix reaching into a gated phase,
+        a structural design choice, or a flaky test.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: One sentence, answerable. Not "thoughts on X?".
+    validations: { required: true }
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options considered
+      description: Each with its cost, and what it means for the invariants in CLAUDE.md section 4.
+    validations: { required: true }
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Claude's recommendation and why
+    validations: { required: true }
+
+  - type: textarea
+    id: blocked
+    attributes:
+      label: Blocked until answered
+      description: Which issues and PRs are stalled on this.
+    validations: { required: true }

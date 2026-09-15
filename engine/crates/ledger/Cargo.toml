@@ -1,0 +1,26 @@
+[package]
+name = "ledger"
+description = "Append-only double-entry ledger over Postgres. The source of truth (I8, I9)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+# Suites that need a live Postgres. Run with `just test-db` after `just up`.
+db-tests = []
+
+[dependencies]
+thiserror.workspace = true
+sqlx.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+sqlx.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+proptest.workspace = true
+
+[lints]
+workspace = true

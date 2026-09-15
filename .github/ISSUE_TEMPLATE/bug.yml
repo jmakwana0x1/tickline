@@ -1,0 +1,30 @@
+name: Bug
+description: Something is wrong. Includes any flaky test.
+title: "bug: <what breaks>"
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **A flaky test is a bug** — in the system or in the test, never noise to retry
+        (CLAUDE.md section 2). File it here with the seed.
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Exact command, seed, and `PROPTEST_CASES` / `FOUNDRY_PROFILE` if relevant.
+      render: shell
+    validations: { required: true }
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected versus actual
+    validations: { required: true }
+
+  - type: input
+    id: invariant
+    attributes:
+      label: Invariant violated, if any
+      placeholder: "I8, or none"

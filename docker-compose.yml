@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: tickline-postgres
+    environment:
+      POSTGRES_USER: tickline
+      POSTGRES_PASSWORD: tickline
+      POSTGRES_DB: tickline
+    ports:
+      # 5433 on the host so a local 5432 keeps working.
+      - "5433:5432"
+    command:
+      # #[sqlx::test] creates and drops a database per test; give it room.
+      - "postgres"
+      - "-c"
+      - "max_connections=400"
+      - "-c"
+      - "fsync=off"            # test data is disposable; durability costs time
+      - "-c"
+      - "synchronous_commit=off"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tickline -d tickline"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - tickline-pgdata:/var/lib/postgresql/data
+
+volumes:
+  tickline-pgdata:

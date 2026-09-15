@@ -1,0 +1,51 @@
+name: setup
+description: Install the pinned Tickline toolchain. One place, so CI and dev-setup agree.
+
+inputs:
+  node:
+    description: Install Node and pnpm
+    default: 'true'
+  foundry:
+    description: Install Foundry
+    default: 'true'
+  sqlx:
+    description: Install sqlx-cli
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: rust (pinned by rust-toolchain.toml)
+      shell: bash
+      run: rustup show
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: engine
+
+    - name: just
+      uses: extractions/setup-just@v2
+
+    - name: node + pnpm
+      if: inputs.node == 'true'
+      shell: bash
+      run: corepack enable
+    - uses: actions/setup-node@v4
+      if: inputs.node == 'true'
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+    - name: install workspace deps
+      if: inputs.node == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - uses: foundry-rs/foundry-toolchain@v1
+      if: inputs.foundry == 'true'
+      with:
+        version: stable
+
+    - name: sqlx-cli
+      if: inputs.sqlx == 'true'
+      shell: bash
+      run: cargo install sqlx-cli --no-default-features --features rustls,postgres --locked

@@ -1,0 +1,21 @@
+{
+  "name": "@tickline/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "e2e": "tsx src/run.ts scenarios",
+    "load": "tsx src/load.ts"
+  },
+  "dependencies": {
+    "@tickline/agents": "workspace:*",
+    "viem": "^2.21.44",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

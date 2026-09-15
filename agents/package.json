@@ -1,0 +1,18 @@
+{
+  "name": "@tickline/agents",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint src test",
+    "vectors": "tsx src/vectors/generate.ts --out ../testdata/vectors/eip712.json"
+  },
+  "dependencies": {
+    "viem": "^2.21.44"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

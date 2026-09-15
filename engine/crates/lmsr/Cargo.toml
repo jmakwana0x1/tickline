@@ -1,0 +1,18 @@
+[package]
+name = "lmsr"
+description = "Fixed-point binary LMSR. Zero IO by contract (CLAUDE.md section 3)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# No IO dependencies, ever. scripts/check-crate-boundaries.sh enforces this.
+[dependencies]
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,7 @@
+name: "missed commit"
+seed: 1004
+proves: "past the grace deadline the market fails and receipts reclaim costPaid"
+status: pending   # implemented in Phase 6
+expect:
+  drift: 0
+  balances: []    # filled in Phase 6; every participant, to the base unit

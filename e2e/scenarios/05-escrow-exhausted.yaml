@@ -1,0 +1,7 @@
+name: "escrow exhausted mid-session"
+seed: 1005
+proves: "fills are rejected with 402, no receipt is issued, balances are untouched (I7)"
+status: pending   # implemented in Phase 6
+expect:
+  drift: 0
+  balances: []    # filled in Phase 6; every participant, to the base unit
