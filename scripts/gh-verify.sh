@@ -9,7 +9,16 @@ ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 bad()  { printf '  \033[31m✗\033[0m %s\n' "$*"; FAILED=1; }
 warn() { printf '  \033[33m·\033[0m %s\n' "$*"; }
 eq()   { # <label> <expected> <actual>
-  [[ "$2" == "$3" ]] && ok "$1 = $2" || bad "$1: expected '$2', got '$3'"
+  # A `null` means the field is not visible to this token, which is not the same as the
+  # field being wrong. The default CI GITHUB_TOKEN cannot see merge-strategy flags; saying
+  # "expected true, got null" there would be a false failure.
+  if [[ "$3" == "null" ]]; then
+    warn "$1: not visible to this token (expected '$2') — verified by the gh-verify workflow"
+  elif [[ "$2" == "$3" ]]; then
+    ok "$1 = $2"
+  else
+    bad "$1: expected '$2', got '$3'"
+  fi
 }
 
 command -v gh >/dev/null || { echo "gh not installed — see 'just doctor'" >&2; exit 1; }

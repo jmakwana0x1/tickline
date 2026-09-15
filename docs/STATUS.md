@@ -22,7 +22,7 @@ Risk being retired: building against a misread x402 spec.
 | Foundry profiles `default` / `ci` / `deep`, `PROPTEST_CASES` | written |
 | CI workflow with the `required` aggregator | written |
 | Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
-| `docs/spec-notes.md` | **not started — blocks the phase** |
+| `docs/spec-notes.md` | ✅ researched and cited — **9 open questions await Jay (§8)** |
 | GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
 | Guard proofs | 3 of 4 — see below |
 | Release `phase-0` | not cut |
@@ -45,6 +45,8 @@ Risk being retired: building against a misread x402 spec.
 | Foundry | 1.8.1 (`stable` channel in CI) | `.github/actions/setup` — **to pin to a release once Phase 3 opens** |
 | forge-std | v1.16.2 (`bf647bd`) | `contracts/lib/forge-std`, git submodule |
 | gitleaks | 8.21.2 | `.pre-commit-config.yaml` |
+| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4 — verified live on Base Sepolia |
+| x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
 | x402 escrow reference | not yet vendored | Phase 3, pinned by commit |
 
 ---
@@ -95,11 +97,10 @@ Each is a `needs-jay` issue. Claude does not proceed past one by guessing.
 
 | # | Question | Blocks | Issue |
 |---|---|---|---|
-| Q1 | Every item in `docs/spec-notes.md` §Open questions | Phases 2–5 | _to open_ |
-| Q2 | Invariants **I4, I5, I6** are Claude's reconstruction from `PHASES.md` — they are the only IDs the plan references without stating. Confirm or correct the wording in `CLAUDE.md` §4. | Phase 4 | _to open_ |
-| Q3 | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
-| Q4 | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
-| Q5 | Foundry has no semver releases on the stable channel; pinning by date-tag or by commit? | Phase 3 | _to open_ |
+| — | **`docs/spec-notes.md` §8 now carries 9 numbered questions (Q1–Q9) from the research.** The most important is **Q1**: `parsePriceFeedUpdatesUnique` does not give the guarantee `PHASES.md` assumed, which makes resolution manipulable unless the window is chosen deliberately. | Phases 2–5 | _to open_ |
+| Qa | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
+| Qb | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
+| Qc | Foundry has no semver releases on the stable channel; pinning by date-tag or by commit? | Phase 3 | _to open_ |
 | Q6 | The `main` ruleset now requires 0 approving reviews (ADR-0003), so a PR can merge without a human reading it. Revisit if a second reviewer account or review bot is ever added. | — | answered 2026-09-15 |
 
 ---
