@@ -28,6 +28,7 @@ row docker   'docker --version'      'https://docs.docker.com/engine/install/'
 row sqlx     'sqlx --version'        'cargo install sqlx-cli --no-default-features --features rustls,postgres'
 row python3  'python3 --version'     'apt install python3'
 row gh       'gh --version'          'https://cli.github.com/'
+row jq       'jq --version'          'apt install jq, or the binary from https://jqlang.github.io/jq/'
 row gitleaks 'gitleaks version'      'https://github.com/gitleaks/gitleaks/releases'
 echo "  optional:"
 row cargo-mutants 'cargo mutants --version' 'cargo install cargo-mutants' opt

@@ -1,7 +1,7 @@
-name: "dishonest operator"
+name: 'dishonest operator'
 seed: 1003
-proves: "an under-committed agent is made whole from the bond and the operator is slashed (I12)"
-status: pending   # implemented in Phase 6
+proves: 'an under-committed agent is made whole from the bond and the operator is slashed (I12)'
+status: pending # implemented in Phase 6
 expect:
   drift: 0
-  balances: []    # filled in Phase 6; every participant, to the base unit
+  balances: [] # filled in Phase 6; every participant, to the base unit

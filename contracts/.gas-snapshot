@@ -1,0 +1,2 @@
+SmokeTest:testFuzz_additionIsCommutative(uint128,uint128) (runs: 5000, μ: 683, ~: 683)
+SmokeTest:test_arithmetic_reverts_on_overflow() (gas: 4074)

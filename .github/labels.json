@@ -10,16 +10,36 @@
   { "name": "phase-8", "color": "0e8a16", "description": "Testnet, dashboard, demo" },
   { "name": "phase-9", "color": "0e8a16", "description": "Stretch: TWAP template" },
 
-  { "name": "tracking", "color": "1d76db", "description": "Phase tracking issue. One per milestone" },
+  {
+    "name": "tracking",
+    "color": "1d76db",
+    "description": "Phase tracking issue. One per milestone"
+  },
   { "name": "slice", "color": "c5def5", "description": "One unit of work, closed by a single PR" },
 
-  { "name": "needs-jay", "color": "d93f0b", "description": "Blocked on a human decision. Claude stops here" },
-  { "name": "invariant", "color": "b60205", "description": "Touches an invariant in CLAUDE.md section 4" },
+  {
+    "name": "needs-jay",
+    "color": "d93f0b",
+    "description": "Blocked on a human decision. Claude stops here"
+  },
+  {
+    "name": "invariant",
+    "color": "b60205",
+    "description": "Touches an invariant in CLAUDE.md section 4"
+  },
   { "name": "adr", "color": "5319e7", "description": "Needs an ADR before any code" },
-  { "name": "red", "color": "e99695", "description": "Deliberately failing, proving a guard works. Never merged" },
+  {
+    "name": "red",
+    "color": "e99695",
+    "description": "Deliberately failing, proving a guard works. Never merged"
+  },
 
   { "name": "security", "color": "b60205", "description": "Funds, keys, or trust boundaries" },
-  { "name": "bug", "color": "d73a4a", "description": "Something is wrong, including any flaky test" },
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "Something is wrong, including any flaky test"
+  },
   { "name": "chore", "color": "ededed", "description": "Tooling, CI, housekeeping" },
   { "name": "docs", "color": "0075ca", "description": "Documentation only" }
 ]

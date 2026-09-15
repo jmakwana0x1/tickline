@@ -18,7 +18,8 @@ START="$(date -u +%s)"
 step() { printf '\n\033[1m── gate %s › %s\033[0m\n' "$PHASE" "$*"; }
 
 gate_0() {
-  step "toolchain"            ; just doctor
+  # `just doctor` is deliberately NOT here: it checks the developer's machine, and CI
+  # runners carry a different toolchain on purpose. The gate checks the commit.
   step "format"               ; just fmt-check
   step "lint"                 ; just lint
   step "crate boundaries"     ; just deps-check

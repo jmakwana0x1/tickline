@@ -15,8 +15,7 @@ via_ir = false
 bytecode_hash = "none"          # reproducible bytecode for verification
 cbor_metadata = false
 gas_reports = ["TicklineVault"]
-# Money math: a silent truncation is a lost-funds bug. Warnings are errors in CI.
-deny_warnings = false
+# Warnings are errors in `ci` and `deep`, not here: local iteration stays fast.
 fs_permissions = [{ access = "read", path = "../testdata" }]
 # No network in any suite except test/fork (CLAUDE.md section 2).
 no_match_path = "test/fork/*"
@@ -33,7 +32,7 @@ call_override = false
 shrink_run_limit = 5000
 
 [profile.ci]
-deny_warnings = true
+deny = "warnings"
 verbosity = 3
 
 [profile.ci.fuzz]
@@ -47,7 +46,7 @@ fail_on_revert = true
 shrink_run_limit = 100000
 
 [profile.deep]
-deny_warnings = true
+deny = "warnings"
 
 [profile.deep.fuzz]
 runs = 250000
@@ -70,7 +69,7 @@ bracket_spacing = false
 int_types = "long"              # uint256, never uint
 quote_style = "double"
 number_underscore = "thousands"
-multiline_func_header = "params_first"
+multiline_func_header = "params_first_multi"
 sort_imports = true
 
 [rpc_endpoints]

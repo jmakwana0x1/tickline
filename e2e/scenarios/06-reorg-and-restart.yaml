@@ -1,7 +1,7 @@
-name: "reorg plus engine restart"
+name: 'reorg plus engine restart'
 seed: 1006
 proves: "a reorg during trading and a mid-epoch restart leave scenario 1's balances unchanged (I9, I13, I14)"
-status: pending   # implemented in Phase 6
+status: pending # implemented in Phase 6
 expect:
   drift: 0
-  balances: []    # filled in Phase 6; every participant, to the base unit
+  balances: [] # filled in Phase 6; every participant, to the base unit

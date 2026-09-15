@@ -1,6 +1,6 @@
 name: Needs Jay
 description: A decision Claude will not make alone. Work stops until this is answered.
-title: "needs-jay: <the question>"
+title: 'needs-jay: <the question>'
 labels: [needs-jay]
 body:
   - type: markdown

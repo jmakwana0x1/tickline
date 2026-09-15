@@ -7,3 +7,7 @@ dist
 .next
 pnpm-lock.yaml
 testdata/vectors
+
+# Markdown is authored by hand here. PHASES.md in particular is Jay's document, and
+# reformatting prose tables produces diffs that bury the real change.
+*.md

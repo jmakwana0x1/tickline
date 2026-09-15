@@ -1,7 +1,7 @@
-name: "mirror: resolve NO"
+name: 'mirror: resolve NO'
 seed: 1002
 proves: "identical trading resolving NO mirrors scenario 1's balances"
-status: pending   # implemented in Phase 6
+status: pending # implemented in Phase 6
 expect:
   drift: 0
-  balances: []    # filled in Phase 6; every participant, to the base unit
+  balances: [] # filled in Phase 6; every participant, to the base unit

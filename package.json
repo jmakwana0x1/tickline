@@ -2,6 +2,7 @@
   "name": "tickline",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "packageManager": "pnpm@9.12.3",
   "engines": {
     "node": ">=22"

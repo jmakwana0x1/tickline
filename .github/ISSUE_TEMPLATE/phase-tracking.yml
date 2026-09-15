@@ -1,6 +1,6 @@
 name: Phase tracking
 description: The single tracking issue for a phase. One per milestone.
-title: "Phase <n>: <name>"
+title: 'Phase <n>: <name>'
 labels: [tracking, needs-jay]
 body:
   - type: textarea
@@ -40,8 +40,8 @@ body:
       label: Exit criteria
       options:
         - label: Every slice issue in this milestone is closed through a merged PR
-        - label: "`just gate <n>` green locally and in CI, output pasted above"
+        - label: '`just gate <n>` green locally and in CI, output pasted above'
         - label: Open questions in docs/spec-notes.md for this phase are answered and signed off
         - label: docs/STATUS.md updated (gate log, pinned versions, benchmarks)
         - label: Jay has given an explicit go-ahead in a comment on this issue
-        - label: ".phase bumped, milestone closed, `gh release create phase-<n>` done"
+        - label: '.phase bumped, milestone closed, `gh release create phase-<n>` done'

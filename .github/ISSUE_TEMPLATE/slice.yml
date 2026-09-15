@@ -1,6 +1,6 @@
 name: Slice
 description: One unit of work that a single PR closes.
-title: "<area>: <behaviour>"
+title: '<area>: <behaviour>'
 labels: [slice]
 body:
   - type: markdown
@@ -13,7 +13,7 @@ body:
     id: phase
     attributes:
       label: Phase
-      placeholder: "3"
+      placeholder: '3'
     validations: { required: true }
 
   - type: textarea
@@ -43,7 +43,7 @@ body:
     attributes:
       label: Invariants touched
       description: IDs from CLAUDE.md section 4. Write "none" if genuinely none.
-      placeholder: "I7, I8"
+      placeholder: 'I7, I8'
     validations: { required: true }
 
   - type: checkboxes
