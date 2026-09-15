@@ -40,10 +40,36 @@ runs:
       shell: bash
       run: pnpm install --frozen-lockfile
 
-    - uses: foundry-rs/foundry-toolchain@v1
+    # Pinned, checksum-verified, and retried. The upstream action installs whatever
+    # `stable` currently points at — so the gate could change meaning without a commit —
+    # and its downloader has no retry, so a single connection reset turns a green commit
+    # red (issue #11). Both are fixed here.
+    - name: foundry (pinned v1.8.1, checksum-verified, retried)
       if: inputs.foundry == 'true'
-      with:
-        version: stable
+      shell: bash
+      env:
+        FOUNDRY_VERSION: v1.8.1
+        FOUNDRY_SHA256: 37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10
+      run: |
+        set -euo pipefail
+        dest="$HOME/.foundry/bin"
+        mkdir -p "$dest"
+        archive="/tmp/foundry.tar.gz"
+        url="https://github.com/foundry-rs/foundry/releases/download/${FOUNDRY_VERSION}/foundry_${FOUNDRY_VERSION}_linux_amd64.tar.gz"
+
+        for attempt in 1 2 3; do
+          if curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors --connect-timeout 20 \
+               "$url" -o "$archive"; then
+            break
+          fi
+          echo "::warning::foundry download attempt $attempt failed, retrying"
+          sleep $(( attempt * 5 ))
+        done
+
+        echo "${FOUNDRY_SHA256}  ${archive}" | sha256sum -c -
+        tar -xzf "$archive" -C "$dest"
+        echo "$dest" >> "$GITHUB_PATH"
+        "$dest/forge" --version
 
     - name: sqlx-cli
       if: inputs.sqlx == 'true'
