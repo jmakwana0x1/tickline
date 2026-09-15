@@ -21,10 +21,10 @@ Risk being retired: building against a misread x402 spec.
 | `docker-compose.yml`, anvil via `just up` | written |
 | Foundry profiles `default` / `ci` / `deep`, `PROPTEST_CASES` | written |
 | CI workflow with the `required` aggregator | written |
-| Smoke test per stack | Rust ✅ green · Solidity, TS, sqlx written, unverified locally |
-| `docs/spec-notes.md` | **not started — blocks the phase** |
-| GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | not run — needs `gh` |
-| Deliberately-red PR, direct-push rejection, gitleaks planted key | not run |
+| Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
+| `docs/spec-notes.md` | ✅ researched and cited — **9 open questions await Jay (§8)** |
+| GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
+| Guard proofs | 3 of 4 — see below |
 | Release `phase-0` | not cut |
 
 ---
@@ -42,8 +42,11 @@ Risk being retired: building against a misread x402 spec.
 | Node | 22 | `.nvmrc` |
 | pnpm | 9.12.3 | `package.json` `packageManager` |
 | Postgres | 16.4-alpine | `docker-compose.yml`, CI service |
-| Foundry | `stable` channel | `.github/actions/setup` — **to pin to a release once Phase 3 opens** |
-| forge-std | not yet vendored | Phase 3 |
+| Foundry | 1.8.1 (`stable` channel in CI) | `.github/actions/setup` — **to pin to a release once Phase 3 opens** |
+| forge-std | v1.16.2 (`bf647bd`) | `contracts/lib/forge-std`, git submodule |
+| gitleaks | 8.21.2 | `.pre-commit-config.yaml` |
+| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4 — verified live on Base Sepolia |
+| x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
 | x402 escrow reference | not yet vendored | Phase 3, pinned by commit |
 
 ---
@@ -61,12 +64,30 @@ tracking issue.
 
 These prove the guards themselves work, and each needs a link before Phase 0 closes:
 
-| Guard | Evidence | Link |
+| Guard | Evidence | State |
 |---|---|---|
-| `required` blocks merge on red | deliberately failing PR, closed unmerged | _pending_ |
-| `main` rejects direct pushes | push rejection output | _pending_ |
-| gitleaks catches a planted key | throwaway branch, scan output | _pending_ |
-| no-skips check catches an `#[ignore]` | throwaway branch, CI output | _pending_ |
+| `main` rejects direct pushes | see output below | ✅ 2026-09-15 |
+| gitleaks catches a planted key | `gitleaks protect --staged` on a planted 32-byte hex key → `leaks found: 1`, exit 1 | ✅ 2026-09-15 |
+| no-skips check catches an `#[ignore]` | planted `#[ignore]` in `lmsr` → `✗ disabled or focused tests found`, exit 1 | ✅ 2026-09-15 |
+| `required` blocks merge on red | deliberately failing PR, closed unmerged | _pending — needs one CI run first_ |
+
+Direct push to `main`, attempted 2026-09-15 with the ruleset active:
+
+```
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: - Changes must be made through a pull request.
+remote: - Required status check "required" is expected.
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+```
+
+### Local environment gaps
+
+Not a code problem, but it shapes what can be proven on this machine:
+
+| Missing | Why it cannot be installed here | Covered by |
+|---|---|---|
+| Docker | no passwordless sudo, no Docker Desktop on the Windows side | the `db` CI job's Postgres service container |
+| `sqlx-cli` | installable, not yet installed | same |
 
 ---
 
@@ -76,11 +97,11 @@ Each is a `needs-jay` issue. Claude does not proceed past one by guessing.
 
 | # | Question | Blocks | Issue |
 |---|---|---|---|
-| Q1 | Every item in `docs/spec-notes.md` §Open questions | Phases 2–5 | _to open_ |
-| Q2 | Invariants **I4, I5, I6** are Claude's reconstruction from `PHASES.md` — they are the only IDs the plan references without stating. Confirm or correct the wording in `CLAUDE.md` §4. | Phase 4 | _to open_ |
-| Q3 | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
-| Q4 | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
-| Q5 | Foundry has no semver releases on the stable channel; pinning by date-tag or by commit? | Phase 3 | _to open_ |
+| — | **`docs/spec-notes.md` §8 now carries 9 numbered questions (Q1–Q9) from the research.** The most important is **Q1**: `parsePriceFeedUpdatesUnique` does not give the guarantee `PHASES.md` assumed, which makes resolution manipulable unless the window is chosen deliberately. | Phases 2–5 | _to open_ |
+| Qa | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
+| Qb | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
+| Qc | Foundry has no semver releases on the stable channel; pinning by date-tag or by commit? | Phase 3 | _to open_ |
+| Q6 | The `main` ruleset now requires 0 approving reviews (ADR-0003), so a PR can merge without a human reading it. Revisit if a second reviewer account or review bot is ever added. | — | answered 2026-09-15 |
 
 ---
 

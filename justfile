@@ -62,7 +62,7 @@ fmt-check:
 
 lint:
     cd {{engine}} && cargo clippy --workspace --all-targets --all-features -- -D warnings
-    cd {{contracts}} && forge build --deny-warnings
+    cd {{contracts}} && forge build --deny warnings
     pnpm -r lint
     @bash scripts/shellcheck.sh
 

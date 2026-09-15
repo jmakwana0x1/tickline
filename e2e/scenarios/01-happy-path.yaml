@@ -1,7 +1,7 @@
-name: "happy path: resolve YES"
+name: 'happy path: resolve YES'
 seed: 1001
-proves: "400 fills across 3 forecasters settle to exact balances after a YES resolution"
-status: pending   # implemented in Phase 6
+proves: '400 fills across 3 forecasters settle to exact balances after a YES resolution'
+status: pending # implemented in Phase 6
 expect:
   drift: 0
-  balances: []    # filled in Phase 6; every participant, to the base unit
+  balances: [] # filled in Phase 6; every participant, to the base unit

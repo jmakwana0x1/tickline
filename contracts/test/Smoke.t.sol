@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 
 /// @title Phase 0 smoke test.
 /// @notice Proves the Foundry harness, the solc pin, and the three profiles all work before

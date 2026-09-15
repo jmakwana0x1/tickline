@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Report the toolchain. Never installs anything; prints what to run.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 MISSING=0
 row() { # <name> <version-cmd> <install-hint> [optional]
@@ -28,12 +28,13 @@ row docker   'docker --version'      'https://docs.docker.com/engine/install/'
 row sqlx     'sqlx --version'        'cargo install sqlx-cli --no-default-features --features rustls,postgres'
 row python3  'python3 --version'     'apt install python3'
 row gh       'gh --version'          'https://cli.github.com/'
+row jq       'jq --version'          'apt install jq, or the binary from https://jqlang.github.io/jq/'
+row shellcheck 'shellcheck --version | sed -n 2p' 'apt install shellcheck (CI runners have it, so a local skip hides failures)'
 row gitleaks 'gitleaks version'      'https://github.com/gitleaks/gitleaks/releases'
 echo "  optional:"
 row cargo-mutants 'cargo mutants --version' 'cargo install cargo-mutants' opt
 row cargo-llvm-cov 'cargo llvm-cov --version' 'cargo install cargo-llvm-cov' opt
 row slither  'slither --version'     'pipx install slither-analyzer' opt
-row shellcheck 'shellcheck --version | sed -n 2p' 'apt install shellcheck' opt
 
 if (( MISSING )); then
   echo

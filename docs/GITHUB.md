@@ -25,8 +25,10 @@ Defined as JSON in `.github/rulesets/main.json`, applied by `just gh-bootstrap`,
 
 - **Block direct pushes.** Changes reach `main` only through a PR. (Phase 0's single bootstrap
   commit is the one recorded exception, taken before the ruleset is applied.)
-- **Require a pull request**, 1 approving review, stale approvals dismissed on new commits,
-  conversation resolution required.
+- **Require a pull request**, stale approvals dismissed on new commits, conversation
+  resolution required. **0 required approving reviews** — see ADR-0003: on a solo repository an
+  approval requirement with no bypass actors deadlocks, because GitHub forbids approving your
+  own PR. The merge gate is the `required` check, not a button press.
 - **Require status checks**: exactly one — `required`. See section 3.
 - **Require linear history.** No merge commits.
 - **Block force pushes and deletions.**
@@ -164,5 +166,11 @@ It exits non-zero on the first mismatch, printing the expected and actual value:
 8. `.github/workflows/ci.yml` defines a `required` job needing every other job in the file — so a
    newly added job cannot be forgotten in the aggregator.
 
-Run it after any GitHub settings change, and in the phase gate. Settings drift silently; this is the
-only thing that catches it.
+Run it after any GitHub settings change, and before closing a phase. Settings drift silently;
+this is the only thing that catches it.
+
+Inside CI it **skips, loudly**, because repository settings belong to the repository rather than
+to a commit and the default `GITHUB_TOKEN` cannot read rulesets (ADR-0004). The scheduled
+`.github/workflows/gh-verify.yml` runs it daily against a `TICKLINE_ADMIN_TOKEN` secret if one
+is configured, and opens an issue when settings drift. Locally, an unauthenticated
+`just gh-verify` is still a hard failure.

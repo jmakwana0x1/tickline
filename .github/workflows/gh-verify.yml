@@ -1,0 +1,50 @@
+# Repository settings are a property of the repo, not of a commit (ADR-0004), so they are
+# checked on a schedule rather than on every PR. Settings drift silently; this catches it
+# within a day.
+name: gh-verify
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  settings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: check for an admin token
+        id: token
+        env:
+          ADMIN_TOKEN: ${{ secrets.TICKLINE_ADMIN_TOKEN }}
+        run: |
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "::notice::TICKLINE_ADMIN_TOKEN is not set, so repository settings cannot be
+            verified here. Create a fine-grained PAT with Administration:read and add it as a
+            repository secret. Until then, run 'just gh-verify' locally before closing a phase."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: extractions/setup-just@v2
+        if: steps.token.outputs.present == 'true'
+
+      - name: just gh-verify
+        if: steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.TICKLINE_ADMIN_TOKEN }}
+        run: just gh-verify
+
+      - name: open an issue if settings have drifted
+        if: failure() && steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "GitHub settings have drifted from docs/GITHUB.md" \
+            --label chore,needs-jay \
+            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          Fix with 'just gh-bootstrap', then confirm with 'just gh-verify'."

@@ -1,6 +1,6 @@
 name: Bug
 description: Something is wrong. Includes any flaky test.
-title: "bug: <what breaks>"
+title: 'bug: <what breaks>'
 labels: [bug]
 body:
   - type: markdown
@@ -27,4 +27,4 @@ body:
     id: invariant
     attributes:
       label: Invariant violated, if any
-      placeholder: "I8, or none"
+      placeholder: 'I8, or none'

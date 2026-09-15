@@ -2,7 +2,7 @@
 # Create labels, milestones, and the branch ruleset. Idempotent: safe to re-run
 # after any settings change, and `just gh-verify` is what proves it took.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 command -v gh >/dev/null || { echo "gh not installed — see 'just doctor'" >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq not installed (apt install jq)" >&2; exit 1; }

@@ -3,7 +3,7 @@
 # A phase is never "done" in a way that lets a later phase quietly break it.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 TARGET="${1:?usage: just gate <n>}"
 [[ "$TARGET" =~ ^[0-9]$ ]] || { echo "phase must be 0-9, got '$TARGET'"; exit 2; }
@@ -18,7 +18,8 @@ START="$(date -u +%s)"
 step() { printf '\n\033[1m── gate %s › %s\033[0m\n' "$PHASE" "$*"; }
 
 gate_0() {
-  step "toolchain"            ; just doctor
+  # `just doctor` is deliberately NOT here: it checks the developer's machine, and CI
+  # runners carry a different toolchain on purpose. The gate checks the commit.
   step "format"               ; just fmt-check
   step "lint"                 ; just lint
   step "crate boundaries"     ; just deps-check
