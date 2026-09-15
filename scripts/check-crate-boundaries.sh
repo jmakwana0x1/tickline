@@ -2,7 +2,7 @@
 # lmsr and protocol are zero-IO (CLAUDE.md section 3). This is what makes them
 # exhaustively testable: no clock, no database, no network, no async runtime.
 set -euo pipefail
-cd "$(dirname "$0")/../engine"
+cd "$(dirname "$0")/../engine" || exit 1
 
 BANNED='^(tokio|sqlx|reqwest|axum|hyper|alloy-provider|chrono|std-time|rand)$'
 STATUS=0

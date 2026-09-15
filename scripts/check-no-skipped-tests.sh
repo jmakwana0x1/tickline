@@ -2,7 +2,7 @@
 # Fails if any test is ignored, skipped, or focused.
 # CLAUDE.md section 2: weakening a test is a needs-jay conversation, not a commit.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 declare -a FOUND=()
 

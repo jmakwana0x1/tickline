@@ -8,7 +8,10 @@
 
 use sqlx::{PgPool, Row};
 
-#[sqlx::test]
+// The migrations directory is resolved relative to THIS crate, not the workspace root, so the
+// default (`./migrations`) looks inside `crates/ledger` and silently finds nothing. Found by the
+// first CI run of this test: it failed with `relation "_sqlx_migrations" does not exist`.
+#[sqlx::test(migrations = "../../migrations")]
 async fn sqlx_test_creates_and_drops_a_database(pool: PgPool) -> sqlx::Result<()> {
     let name: String = sqlx::query("SELECT current_database()")
         .fetch_one(&pool)

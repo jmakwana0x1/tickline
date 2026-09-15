@@ -3,7 +3,7 @@
 # A phase is never "done" in a way that lets a later phase quietly break it.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 TARGET="${1:?usage: just gate <n>}"
 [[ "$TARGET" =~ ^[0-9]$ ]] || { echo "phase must be 0-9, got '$TARGET'"; exit 2; }

@@ -2,7 +2,7 @@
 # Assert GitHub is configured exactly as docs/GITHUB.md section 9 says.
 # Settings drift silently; this is the only thing that catches it.
 set -uo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 FAILED=0
 ok()   { printf '  \033[32m✓\033[0m %s\n' "$*"; }

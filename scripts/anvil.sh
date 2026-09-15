@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start/stop a background anvil with a deterministic chain (CLAUDE.md section 2: determinism).
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 PID_FILE=".anvil.pid"
 LOG_FILE=".anvil.log"

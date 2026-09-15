@@ -2,7 +2,7 @@
 # One-shot developer setup for a fresh Linux/WSL box. Idempotent.
 # Run it, then `just doctor` should be all green.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 have() { command -v "$1" >/dev/null 2>&1; }
 say()  { printf '\n\033[1m→ %s\033[0m\n' "$*"; }
@@ -24,6 +24,14 @@ if ! have node; then
   nvm install "$(cat .nvmrc)" && nvm use "$(cat .nvmrc)"
 fi
 have pnpm || { say "pnpm"; corepack enable && corepack prepare pnpm@9.12.3 --activate; }
+
+if ! have shellcheck; then
+  say "shellcheck"
+  SC=v0.10.0
+  curl -sSL "https://github.com/koalaman/shellcheck/releases/download/$SC/shellcheck-$SC.linux.x86_64.tar.xz" \
+    | tar -xJ -C /tmp && mkdir -p "$HOME/.local/bin" && cp "/tmp/shellcheck-$SC/shellcheck" "$HOME/.local/bin/"
+fi
+have jq || { say "jq"; mkdir -p "$HOME/.local/bin"; curl -sSL https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64 -o "$HOME/.local/bin/jq"; chmod +x "$HOME/.local/bin/jq"; }
 
 have gh || say "gh: install from https://cli.github.com/ , then 'gh auth login'"
 have docker || say "docker: install from https://docs.docker.com/engine/install/"
