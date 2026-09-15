@@ -39,7 +39,9 @@ mod tests {
     /// Phase 1 replaces this file with the real unit, property, and differential suites.
     #[test]
     fn wad_is_one_times_ten_to_the_eighteen() {
-        assert_eq!(WAD, 10_i128.pow(18));
+        // DELIBERATELY WRONG. This PR exists to prove `required` blocks a red merge
+        // (PHASES.md phase 0). It must never be merged.
+        assert_eq!(WAD, 10_i128.pow(17));
     }
 
     #[test]
