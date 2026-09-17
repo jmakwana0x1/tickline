@@ -126,6 +126,10 @@ snapshot *args:
 
 # ---------------------------------------------------------------- gates
 
+# Prove gate.sh stops at every failing step (runs inside gate 0).
+test-gate:
+    @bash scripts/test-gate.sh
+
 # Run phase n's gate and every earlier phase's gate. The only definition of done.
 gate n:
     @bash scripts/gate.sh {{n}}
