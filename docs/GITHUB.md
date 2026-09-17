@@ -125,8 +125,14 @@ just gate $(cat .phase)
 # 5. Self-review the whole diff, then hand it over
 gh pr diff --patch | less
 gh pr ready
-gh pr merge --squash --delete-branch   # only once `required` is green and Jay has approved
+gh pr merge --squash --delete-branch   # only once `required` is green
 ```
+
+**Merge authority.** Claude runs step 5 itself once `required` is green, unless the PR is labeled
+`needs-jay` or hits a stop-and-ask trigger in `CLAUDE.md` section 2 (a new dependency, a public
+interface change, a CI workflow, ruleset or required-check change, or modifying or deleting an
+existing test). Then the PR is labeled `needs-jay` and waits. This matches ADR-0003: the ruleset
+requires no approving review, so the merge gate is `required` plus these triggers.
 
 **`gh pr create --draft` is not optional.** A PR is draft until its gate is green; a non-draft PR is
 a request for Jay's attention, and asking for attention on red work wastes it.
