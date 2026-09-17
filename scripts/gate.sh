@@ -41,7 +41,7 @@ ENGINE=(--manifest-path engine/Cargo.toml)
 
 gate_1() {
   step "lmsr suites"          ; cargo test "${ENGINE[@]}" -p lmsr --all-features
-  step "lmsr differential"    ; just vectors
+  step "lmsr differential"    ; just vectors-lmsr
   step "lmsr mutants"         ; just mutants lmsr
   step "lmsr coverage >= 95%" ; bash scripts/check-coverage.sh lmsr 95
 }
