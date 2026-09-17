@@ -251,11 +251,14 @@ Nothing in CI runs a command that a developer cannot run locally by the same nam
 | Command | Does |
 |---|---|
 | `just gate <n>` | Run phase `n`'s gate **and every earlier phase's gate**. The only definition of "done". |
+| `just gate-closed` | Gate every closed phase. What per-PR CI runs (ADR-0006). |
 | `just gh-bootstrap` | Create labels, milestones, and the branch ruleset on GitHub. |
 | `just gh-verify` | Assert GitHub is configured exactly as `docs/GITHUB.md` says. |
 
 **`just gate <n>` always reruns phases 0..n.** A phase is never "finished" in a way that lets a later
-phase quietly break it. The gate is the same locally and in CI; a gate that passes locally and fails
+phase quietly break it. Per-PR CI runs `just gate-closed`, so finished phases stay green on every
+change; the in-progress phase's gate runs in the `phase-gate` workflow when the phase closes
+(ADR-0006). The gate is the same locally and in CI; a gate that passes locally and fails
 in CI is a `needs-jay` bug in the gate itself.
 
 ---
@@ -268,9 +271,9 @@ Full detail (exact commands, templates, ruleset contents) lives in `docs/GITHUB.
    phase's Build and Tests sections into slice issues whose acceptance criteria *are test names*.
    Label the tracking issue `needs-jay` and stop until Jay approves the breakdown.
 2. **Per slice.** Branch `<phase>/<issue#>-<slug>` → commit the failing test → open a **draft** PR
-   linking `Closes #<issue>` → make it green → `just gate <n>` → self-review the diff line by line →
+   linking `Closes #<issue>` → make it green → `just gate-closed` → self-review the diff line by line →
    mark ready → merge via squash once `required` is green (merge authority below).
-3. **Phase closes.** Post the gate log to the tracking issue, get Jay's explicit go-ahead, bump
+3. **Phase closes.** Run the `phase-gate` workflow (`just gate <n>` in CI), post its log to the tracking issue, get Jay's explicit go-ahead, bump
    `.phase`, update `docs/STATUS.md`, close the milestone, `gh release create phase-<n>`.
 
 **Merge authority.** Claude merges its own PR with `gh pr merge --squash --delete-branch` once
@@ -297,7 +300,7 @@ A slice is done when **all** of these are true. Not most.
 - [ ] Every new error path has a test. Every custom error has a test that triggers it.
 - [ ] Every invariant the change touches is named by ID in a test.
 - [ ] Nothing is ignored, skipped, or `only`. No commented-out test.
-- [ ] `just gate <current phase>` is green locally and in CI.
+- [ ] `just gate-closed` is green in CI, and the slice's own tests pass locally and in CI.
 - [ ] Rounding direction is stated in a comment wherever a conversion happens (I15).
 - [ ] Public functions carry doc comments naming domain limits and error conditions.
 - [ ] An ADR exists if a future reader would ask "why was it done this way?".

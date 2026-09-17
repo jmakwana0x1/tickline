@@ -53,7 +53,7 @@ run locally by the same name. CI never has a secret extra step.
 | `sol` | `just test-sol` (`ci` profile), `just snapshot --check` | none |
 | `ts` | `just test-ts` | none |
 | `gitleaks` | full-history secret scan | none |
-| `gate` | `just gate $(cat .phase)` | all of the above |
+| `gate` | `just gate-closed`: every closed phase's gate (ADR-0006) | all of the above |
 | **`required`** | nothing; asserts every needed job succeeded | all of the above |
 
 **`required` is the only check named in the ruleset.** Jobs are added and renamed over the phases;
@@ -119,8 +119,9 @@ gh pr create --draft --fill --title "<area>: <behaviour>" \
 # 3. Green: the implementation
 git commit -am "feat(<area>): <behaviour>"
 
-# 4. Prove it
-just gate $(cat .phase)
+# 4. Prove it: the slice's own tests, then every closed phase
+just test
+just gate-closed
 
 # 5. Self-review the whole diff, then hand it over
 gh pr diff --patch | less
@@ -146,7 +147,8 @@ gh issue create --title "Phase <n>: <name>" --label tracking,phase-<n> \
   --milestone "Phase <n>: <name>" --body-file <(...)   # from the tracking template
 
 # Close
-gh issue comment <tracking#> --body-file gate-log.md    # full `just gate <n>` output
+gh workflow run phase-gate.yml                          # `just gate <n>` in CI, current phase
+gh issue comment <tracking#> --body-file gate-log.md    # that run's full log
 # ... Jay comments an explicit go-ahead on the tracking issue ...
 echo <n+1> > .phase && git commit -am "chore: enter phase <n+1>"
 gh issue close <tracking#>

@@ -137,6 +137,11 @@ test-gate:
 gate n:
     @bash scripts/gate.sh {{n}}
 
+# Gate every closed phase: what per-PR CI runs (ADR-0006). Phase 0 is gated while in progress,
+# because its gate has no unbuilt steps.
+gate-closed:
+    @phase="$(cat .phase)"; bash scripts/gate.sh "$(( phase > 0 ? phase - 1 : 0 ))"
+
 # ---------------------------------------------------------------- github
 
 gh-bootstrap:

@@ -1,0 +1,38 @@
+# The in-progress phase's gate: `just gate $(cat .phase)`, which reruns every earlier phase too.
+# Run on demand when a phase is ready to close; its log is the one posted on the tracking issue.
+# Per-PR CI gates only closed phases (ci.yml, ADR-0006), because an unfinished phase's gate
+# cannot pass until the phase is done.
+name: phase-gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gate:
+    name: just gate (phase in progress)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: tickline
+          POSTGRES_PASSWORD: tickline
+          POSTGRES_DB: tickline
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U tickline" --health-interval 2s
+          --health-timeout 3s --health-retries 30
+    env:
+      DATABASE_URL: postgres://tickline:tickline@localhost:5433/tickline
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: ./.github/actions/setup
+        with: { sqlx: 'true' }
+      # Gates 1 and later run mutation testing, coverage and the mpmath oracle.
+      - run: cargo install cargo-mutants cargo-llvm-cov --locked
+      - run: python3 -m pip install -r tools/reference/requirements.txt
+      - run: just migrate
+      - run: just gate "$(cat .phase)"
