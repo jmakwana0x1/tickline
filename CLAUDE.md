@@ -30,6 +30,18 @@ Three properties make it interesting, and each is a thing that can break:
 **Money moves in this system.** Every design choice resolves toward: lose no funds, pay no one
 twice, and prefer halting to drifting.
 
+### Locked design decisions (change only via `needs-jay`)
+
+- Positions are stored per `(market, payer)` in `TicklineVault` storage. Each commit writes only payers whose position changed that epoch, and totals update incrementally. No Merkle roots.
+- Binary markets, buy-only, held to resolution.
+- One payment path: creation subsidy, fills, and price reads are all paid with batch-settlement vouchers.
+- LMSR pricing is offchain only. The vault enforces solvency, monotonic positions, resolution, claims, and slashing, and never prices a trade.
+- Resolution is machine-only. The MVP template is a Pyth price threshold.
+- The operator floats settlement: claimed funds settle to the operator wallet, and `commitEpoch` pulls each market's collateral delta into the vault.
+- No x402 facilitator. Vouchers are verified locally; only EOA payer authorizers are accepted.
+
+What is deliberately not being built is listed in section 10.
+
 ---
 
 ## 2. How Claude works here
@@ -53,7 +65,11 @@ randomness in tests or agents. No network access in any suite except `contracts/
 - an invariant in section 4 would need to change;
 - a fix requires touching a phase that is already gated;
 - an ADR-worthy design choice appears (anything a future reader would ask "why?" about);
-- a test is flaky. A flaky test is a bug in the system or the test, never noise to retry.
+- a test is flaky. A flaky test is a bug in the system or the test, never noise to retry;
+- adding a dependency not already in the workspace manifests;
+- changing a public interface: HTTP API, contract ABI, or EIP-712 type;
+- changing CI workflows, the ruleset, or required checks;
+- modifying or deleting an existing test.
 
 **Write the ADR before the code**, not after, whenever the choice is structural. `docs/decisions/`.
 
@@ -253,9 +269,14 @@ Full detail — exact commands, templates, ruleset contents — lives in `docs/G
    Label the tracking issue `needs-jay` and stop until Jay approves the breakdown.
 2. **Per slice.** Branch `<phase>/<issue#>-<slug>` → commit the failing test → open a **draft** PR
    linking `Closes #<issue>` → make it green → `just gate <n>` → self-review the diff line by line →
-   mark ready → merge via squash once `required` is green.
+   mark ready → merge via squash once `required` is green (merge authority below).
 3. **Phase closes.** Post the gate log to the tracking issue, get Jay's explicit go-ahead, bump
    `.phase`, update `docs/STATUS.md`, close the milestone, `gh release create phase-<n>`.
+
+**Merge authority.** Claude merges its own PR with `gh pr merge --squash --delete-branch` once
+`required` is green, unless the PR is labeled `needs-jay` or hits a stop-and-ask trigger (section 2).
+In those cases Claude labels the PR `needs-jay` and stops. The ruleset requires no approving review
+(ADR-0003), so this rule, together with `required`, is the merge gate.
 
 **Hard rules.**
 - `main` is protected: no direct pushes, linear history, the `required` aggregator check must pass.
@@ -299,3 +320,11 @@ A slice is done when **all** of these are true. Not most.
 | **Subsidy** | The creator's `b·ln2` worst-case funding of the market maker (I3). |
 | **Drift** | Any disagreement between ledger and chain. Halts, never reconciles silently (I13). |
 | **Gate** | `just gate <n>`: phase `n` and all earlier phases green. |
+
+---
+
+## 10. Out of scope (do not build, do not scaffold)
+
+Selling positions before resolution. Order books. Multi-outcome markets. Human or UMA-style resolution. Merkle position roots. Running or depending on an x402 facilitator. EIP-1271 payer authorizers. A token. A human trading UI. MCP servers. Cross-chain anything. KMS key management. Multi-operator support. TWAP templates before Phase 9.
+
+Anything on this list that starts to look necessary is a `needs-jay` issue, not a branch.
