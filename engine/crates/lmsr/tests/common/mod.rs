@@ -9,9 +9,17 @@ pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 /// The significant-digit floor every reference value was computed at (`PHASES.md` phase 1).
 pub const REQUIRED_PRECISION_DIGITS: u64 = 60;
 
-/// Path of the committed vector file, relative to this crate.
+/// Path of the committed vector file.
+///
+/// `TICKLINE_VECTORS_DIR` overrides the directory. `just mutants` sets it, because cargo-mutants
+/// copies only `engine/` to a scratch directory, where the relative path would not resolve.
 pub fn vectors_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../testdata/vectors/lmsr.json")
+    match std::env::var_os("TICKLINE_VECTORS_DIR") {
+        Some(dir) => PathBuf::from(dir).join("lmsr.json"),
+        None => {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../testdata/vectors/lmsr.json")
+        }
+    }
 }
 
 /// Parses the vector file. Fails, rather than skipping, when it is missing.

@@ -11,6 +11,11 @@
 
 #![forbid(unsafe_code)]
 
+pub mod fixed;
+
+pub use alloy_primitives::I256;
+pub use fixed::{exp_wad, ln_wad};
+
 /// One unit in signed WAD fixed point: 1e18.
 pub const WAD: i128 = 1_000_000_000_000_000_000;
 
@@ -20,12 +25,18 @@ pub const WAD: i128 = 1_000_000_000_000_000_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum LmsrError {
-    /// The argument to `exp_wad` was outside the domain where the result fits in a signed WAD.
-    #[error("exp argument {0} is outside the representable domain")]
-    ExpDomain(i128),
-    /// `ln_wad` requires a strictly positive argument.
+    /// `exp_wad`'s result would not fit in a signed 256-bit WAD: the argument is at or above
+    /// [`fixed::EXP_OVERFLOW_AT`].
+    #[error("exp argument {0} is at or above the representable domain")]
+    ExpOverflow(I256),
+    /// `ln_wad` is undefined for arguments that are not strictly positive.
     #[error("ln argument {0} must be strictly positive")]
-    LnDomain(i128),
+    LnUndefined(I256),
+    /// A checked 256-bit operation overflowed. The ported algorithms are designed so this never
+    /// happens inside their documented domains; if it does, the result is refused rather than
+    /// wrapped the way the EVM would wrap it.
+    #[error("256-bit arithmetic overflow in {0}")]
+    ArithmeticOverflow(&'static str),
     /// The liquidity parameter `b` must be strictly positive.
     #[error("liquidity parameter b must be strictly positive, got {0}")]
     NonPositiveLiquidity(i128),
