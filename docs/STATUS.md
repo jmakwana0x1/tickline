@@ -9,14 +9,16 @@ Last updated: 2026-09-17
 
 ## Current phase
 
-**Phase 0 is closed.** Gate 0 passed on `main` at `44dc50d` on 2026-09-17, release `phase-0` is
-cut, and the Phase 0 milestone is closed. Jay gave the go-ahead on #1.
+**Phase 1: LMSR math core.** `.phase` = `1`. Tracking issue #31.
 
-**`.phase` is still `0`.** Bumping it to 1 would make CI run gate 1, which cannot pass until Phase 1
-is finished, so every PR would be red. The fix (per-PR CI gates closed phases; ADR-0006) is #28,
-waiting on Jay. The bump follows as its own one-line PR. Phase 1 is next.
+Risk being retired: wrong prices, and insolvent rounding.
 
-Phase 0 retired this risk: building against a misread x402 spec.
+Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006); Phase 1's own gate runs in the
+`phase-gate` workflow when the phase closes. Decisions D1 to D4 are answered on #31, and the slices
+run strictly in order, S1 to S7.
+
+**Phase 0 closed** on 2026-09-17: gate 0 green on `main` at `44dc50d`, release `phase-0`.
+Phase 0 retired this risk: building against a misread x402 spec. Its deliverables:
 
 | Deliverable | State |
 |---|---|
