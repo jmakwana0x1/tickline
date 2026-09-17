@@ -25,7 +25,7 @@ condition under which it does not.
 | Understand how work happens here | [`CLAUDE.md`](CLAUDE.md) — the working agreement |
 | See what gets built, and when | [`PHASES.md`](PHASES.md) |
 | Know what is actually done | [`docs/STATUS.md`](docs/STATUS.md) |
-| Know what must never break | [`CLAUDE.md` §4](CLAUDE.md#4-invariants) — the fifteen invariants |
+| Know what must never break | [`CLAUDE.md` §4](CLAUDE.md#4-invariants) — the sixteen invariants |
 | Know why something is the way it is | [`docs/decisions/`](docs/decisions/) |
 | Work on the repo itself | [`docs/GITHUB.md`](docs/GITHUB.md) |
 

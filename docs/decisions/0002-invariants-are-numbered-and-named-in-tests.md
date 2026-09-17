@@ -58,3 +58,23 @@ everything else cites. They are marked provisional rather than presented as sett
 `scripts/check-no-skipped-tests.sh` stops an invariant test being disabled. Beyond Phase 4, a
 CI check that every ID in `CLAUDE.md` §4 appears in at least one test name is cheap to add and
 worth adding — recorded here as the obvious next step, not yet implemented.
+
+## Update, 2026-09-17
+
+Made at Jay's direction on #7. ADR-0001 says accepted ADRs are not edited. This section is
+added below the original, which is left as it was, so the record of what was believed on
+2026-09-15 survives.
+
+- **I4, I5 and I6 are confirmed as written.** They are no longer provisional, and Phase 4 may
+  assert them by name.
+- **I7 is reworded.** The original described a reserve-then-release step that the x402
+  batch-settlement scheme does not have. The new wording, in `CLAUDE.md` §4, adds two conditions:
+  no voucher is accepted on a channel with a pending withdrawal, and `balance` and `totalClaimed`
+  are read at confirmation depth.
+- **I16 is added: money before shares.** A `PositionReceipt` is issued only in the same ledger
+  transaction that advances `chargedCumulativeAmount` by that fill's `cost + fee`, and a payer's
+  receipted `costPaid + feesPaid` never exceeds what their channels were charged. Nothing in the
+  original fifteen tied receipts to money actually charged.
+- **IDs are never renumbered.** A new invariant takes the next free number.
+
+Enforcement is unchanged: every test that guards an invariant names its ID.

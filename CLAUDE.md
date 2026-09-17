@@ -156,9 +156,15 @@ than continuing in an unknown state.
 | **I4** | **Market state matches its fills.** A market's `(qY, qN)` equals the sum of all fills recorded in the ledger, and collateral collected equals `C(q) − C(0,0)` plus fees, to the base unit. |
 | **I5** | **Receipts are faithful.** Every field of an issued receipt equals the ledger's cumulative totals for that `(market, agent)` at that receipt's nonce. A receipt is never issued from in-memory state alone. |
 | **I6** | **Receipts are monotonic and unique.** Per `(market, agent)`: nonce strictly increases, every amount field is non-decreasing, exactly one receipt exists per accepted fill, and every receipt verifies against the operator's registered signing key. |
-| **I7** | **Escrow headroom is never exceeded.** For a session, `outstanding reservations + captured cumulative <= indexed escrow balance`. The ceiling is reserved *before* the fill and the remainder released *after* capture; a crash in between leaks nothing after replay. |
+| **I7** | **Escrow headroom is never exceeded.** A voucher is accepted only if its channel has no pending withdrawal and `totalClaimed <= chargedCumulativeAmount <= signedMaxClaimable <= balance`, where `totalClaimed` and `balance` are onchain state indexed at confirmation depth. `chargedCumulativeAmount` advances only after the resource handler succeeds, and request processing is serialized per channel. Once a withdrawal is pending, `totalClaimed` must equal `chargedCumulativeAmount` before `finalizeAfter`. |
 | **I8** | **The ledger balances.** Every ledger transaction is double-entry balanced (entries sum to zero), append-only (no `UPDATE`, no `DELETE`), and no account constrained non-negative ever goes negative. |
 | **I9** | **Replay is deterministic.** Dropping all actors and replaying the ledger from empty reproduces byte-identical actor state. Actor memory is a cache of the ledger, never a source of truth. |
+| **I16** | **Money before shares.** A `PositionReceipt` is issued only in the same ledger transaction that advances `chargedCumulativeAmount` by that fill's `cost + fee`. For every payer, the sum of `costPaid + feesPaid` across their latest receipts is <= the sum of `chargedCumulativeAmount` across their channels. |
+
+The last sentence of I7 is an operational deadline rather than a pure state check. It is asserted
+by the Phase 5 deadline-pressure test and by an alert metric in production. I16 is owned by
+`ledger` and `market`, asserted by the Phase 4 property tests after every step, and at quiescence
+in every Phase 6 scenario. IDs are never renumbered; a new invariant takes the next free number.
 
 ### Settlement — enforced by `settlement`, `indexer`
 
@@ -283,8 +289,8 @@ A slice is done when **all** of these are true. Not most.
 | Term | Meaning |
 |---|---|
 | **Voucher** | A client-signed x402 batch-settlement authorization: pay *up to* a ceiling, cumulatively, from a funded session. |
-| **Ceiling** | The "up to" amount signed per request. Actual capture is <= ceiling; the remainder is released. |
-| **Session** | An agent's funded escrow relationship with the operator, with a monotonic cumulative amount. |
+| **Ceiling** | The "up to" amount signed per request. Actual charge is <= ceiling; the remainder is never charged and never reserved. |
+| **Session** | One x402 batch-settlement channel. An agent runs concurrent sessions by varying the channel `salt`. |
 | **Fill** | One priced trade against the LMSR: shares in, cost out, receipt issued. |
 | **Epoch** | A fixed time slice. Positions are aggregated per epoch and committed once. |
 | **Commit** | The operator writing an epoch's aggregated positions and collateral to the vault. |

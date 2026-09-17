@@ -1,6 +1,6 @@
 # spec-notes: what the x402 batch-settlement scheme actually says
 
-**Status: researched 2026-09-15, awaiting Jay's sign-off on the open questions in §8.**
+**Status: researched 2026-09-15. Every open question in §8 answered by Jay on 2026-09-17 (#6, #7, #8, #9).**
 
 `PHASES.md` phase 0 names the risk this file retires: *building against a misread x402 spec*.
 Nothing in `engine/crates/protocol` or `contracts/src` may be written before the section it
@@ -11,16 +11,25 @@ Every claim below carries a source URL and the date it was read. Where the docum
 ambiguous the ambiguity is recorded in §8 rather than resolved by picking the convenient
 reading — the convenient reading is the one that loses money.
 
-**Primary sources**, all read 2026-09-15:
+**Primary sources**, read 2026-09-15 and re-checked 2026-09-17. Source files are pinned by commit:
+x402 at `84ffb6412a1f2f45a62971c5549eff794281c099` (the only commit that has touched `x402BatchSettlement.sol`), Pyth at `807ff575a9090cee99b9e1a30dc23edf3522fe1b`.
 
 | Source | URL |
 |---|---|
 | Scheme spec (abstract) | `https://github.com/x402-foundation/x402/blob/main/specs/schemes/batch-settlement/scheme_batch_settlement.md` |
 | Scheme spec (EVM binding) | `https://github.com/x402-foundation/x402/blob/main/specs/schemes/batch-settlement/scheme_batch_settlement_evm.md` |
-| Contract source | `https://github.com/x402-foundation/x402/blob/main/contracts/evm/src/x402BatchSettlement.sol` |
+| Contract source | `https://github.com/x402-foundation/x402/blob/84ffb6412a1f2f45a62971c5549eff794281c099/contracts/evm/src/x402BatchSettlement.sol` |
 | Docs index | `https://docs.x402.org/llms.txt` |
 | V1→V2 migration | `https://docs.x402.org/guides/migration-v1-to-v2.md` |
-| Pyth `IPyth.sol` | `https://github.com/pyth-network/pyth-crosschain/blob/main/target_chains/ethereum/sdk/solidity/IPyth.sol` |
+| Pyth `IPyth.sol` | `https://github.com/pyth-network/pyth-crosschain/blob/807ff575a9090cee99b9e1a30dc23edf3522fe1b/target_chains/ethereum/sdk/solidity/IPyth.sol` |
+| Pyth `Pyth.sol` | `https://github.com/pyth-network/pyth-crosschain/blob/807ff575a9090cee99b9e1a30dc23edf3522fe1b/target_chains/ethereum/contracts/contracts/pyth/Pyth.sol` |
+| Pyth `MockPyth.sol` | `https://github.com/pyth-network/pyth-crosschain/blob/807ff575a9090cee99b9e1a30dc23edf3522fe1b/target_chains/ethereum/sdk/solidity/MockPyth.sol` |
+
+**Lesson from this research, twice over: read the code, not the comment.** The `IPyth.sol` NatSpec
+understates what `parsePriceFeedUpdatesUnique` guarantees (§7), and the `x402BatchSettlement`
+header comment (line 18) says `channelId = keccak256(abi.encode(channelConfig))` while the code
+(line 445) computes the EIP-712 hash. Where a comment and the code disagree, this file cites the
+code.
 
 ---
 
@@ -112,9 +121,47 @@ escrow is `balance - totalClaimed`.
 | **Refund** | Cooperative: `refund(config, amount)` by receiver/receiverAuthorizer, or `refundWithSignature(...)`. Returns up to `balance - totalClaimed`. |
 | **Withdraw** | Client escape hatch: `initiateWithdraw` → wait `withdrawDelay` → `finalizeWithdraw`. |
 
+### Withdrawal bounds and mechanics
+
+`MIN_WITHDRAW_DELAY = 15 minutes` and `MAX_WITHDRAW_DELAY = 30 days` (lines 85 to 86), enforced
+at deposit time (line 210). Tickline advertises and requires `withdrawDelay = 3600` (#8).
+
+`initiateWithdraw` (lines 313 to 344) computes available escrow from onchain `totalClaimed`
+only. Its NatSpec, lines 320 to 323:
+
+> Available liquidity is `ch.balance - ch.totalClaimed` using **only** on-chain `totalClaimed`.
+> Payer-signed vouchers that are not yet claimed do **not** reserve funds; receivers relying on
+> voucher value must treat inclusion of `claim` during the withdrawal window as an operational
+> requirement.
+
+`finalizeWithdraw` caps the payout at `balance - totalClaimed` as of finalization (lines 370 to
+371). So a claim that lands before `finalizeWithdraw` wins, and vouchers accepted between
+`initiateWithdraw` and our detection of it are still collectable if we claim in time. This is why
+I7 forbids accepting vouchers on a channel with a pending withdrawal and sets a claim deadline.
+
 ### Events
 
-`ChannelCreated(channelId, config)` and `ChannelClosed(channelId, config)`.
+Eight, all at lines 129 to 150 of the pinned source:
+
+```solidity
+event ChannelCreated(bytes32 indexed channelId, ChannelConfig config);
+event ChannelClosed(bytes32 indexed channelId, ChannelConfig config);
+event Deposited(bytes32 indexed channelId, address indexed sender, uint128 amount, uint128 newBalance);
+event Claimed(bytes32 indexed channelId, address indexed sender, uint128 claimAmount, uint128 newTotalClaimed);
+event Settled(address indexed receiver, address indexed token, address indexed sender, uint128 amount);
+event Refunded(bytes32 indexed channelId, address indexed sender, uint128 amount);
+event WithdrawInitiated(bytes32 indexed channelId, uint128 amount, uint40 finalizeAfter);
+event WithdrawFinalized(bytes32 indexed channelId, address indexed sender, uint128 amount);
+```
+
+Public state readable by the indexer: `channels(channelId)` (line 113) and
+`pendingWithdrawals(channelId)` (line 121).
+
+**`WithdrawInitiated` is a priority event for Tickline** (#8): the indexer surfaces it, the session
+actor stops accepting vouchers on that channel, and the settlement worker claims immediately.
+
+An earlier version of this section listed only `ChannelCreated` and `ChannelClosed`, copied from
+the spec prose. Jay caught it; the list above is from the contract.
 
 > "Indexers must handle `ChannelCreated` firing more than once on the same `channelId` if the
 > channel is re-funded after being fully drained."
@@ -143,9 +190,10 @@ The mechanism:
 - The unused remainder is never "released" — it simply never becomes part of the next voucher's
   base. There is no reservation to leak.
 
-**This materially simplifies Tickline's I7.** There is no separate reserve-then-capture
-bookkeeping to get wrong; the ceiling is implicit in the next voucher the client signs. What the
-engine must do instead is exactly what the spec demands:
+**This materially simplifies Tickline's I7**, which was rewritten on this basis (#7, `CLAUDE.md`
+§4). There is no separate reserve-then-capture bookkeeping to get wrong; the ceiling is implicit
+in the next voucher the client signs. What the engine must do instead is exactly what the spec
+demands:
 
 > "The server must serialize request processing per channel and must not update voucher state
 > until the resource handler has succeeded."
@@ -180,6 +228,12 @@ possible and is explicitly a **trust** matter, not a protocol one:
 | Envelope version | `x402Version: 1` | **`x402Version: 2`** |
 
 Base mainnet is `eip155:8453`; Base Sepolia `eip155:84532`.
+
+**Tickline runs no facilitator (Q6).** The spec describes `/verify`, `/settle` and `/supported` on
+a facilitator, and sponsored deposits through one. Tickline does all of it in the engine:
+vouchers are verified locally, deposits go through the canonical `ERC3009DepositCollector`
+under an outbox intent, and claims are sent with the `receiverAuthorizer` key. The wire format
+toward clients is unchanged, which is what lets the official TS client work as-is.
 
 ### 402 challenge body
 
@@ -266,7 +320,8 @@ Packages named on the batch-settlement docs page:
 
 Client examples also use `viem`. Go and Python clients exist, so the scheme is not TS-only.
 
-**Versions to pin: not yet determined** — see Q7.
+**Versions:** exact, no `^` or `~`, pinned in the Phase 2 PR that first adds `@x402/*` and recorded
+in `docs/STATUS.md` (Q7).
 
 ---
 
@@ -279,8 +334,10 @@ Client examples also use `viem`. Go and Python clients exist, so the scheme is n
 - **Confirmed: it does not implement batch settlement.** Its roadmap lists `upto` and `deferred`
   as future work; batch settlement is not mentioned. `PHASES.md`'s assertion holds — the seller
   side is ours.
-- `x402-types` is worth evaluating for the V2 envelope types rather than hand-rolling them.
-  Apache-2.0 is compatible with our MIT. See Q8.
+- **Not adopted (Q8).** `protocol` writes its own V2 envelope types: they are a handful of
+  structs, the batch-settlement `extra` fields are not in `x402-types`, and `protocol` stays
+  zero-IO with minimal dependencies. The guard against drift is the Phase 2 cross-stack vector
+  file generated by the official TS SDK, not a shared crate.
 
 ---
 
@@ -289,30 +346,49 @@ Client examples also use `viem`. Go and Python clients exist, so the scheme is n
 - **`MockPyth` exists** and is usable: `target_chains/ethereum/sdk/solidity/MockPyth.sol`,
   `contract MockPyth is AbstractPyth`, constructor `(uint validTimePeriod, uint singleUpdateFeeInWei)`,
   with `createPriceFeedUpdateData(...)` for building fixtures. Good for Phase 3 and Phase 6.
-- **`parsePriceFeedUpdatesUnique` — read the guarantee carefully.** Verbatim NatSpec:
+- **`parsePriceFeedUpdatesUnique` gives exactly the guarantee `PHASES.md` assumed.** The
+  `IPyth.sol` NatSpec is misleading; the implementation is stronger than it reads.
 
-  > "Similar to `parsePriceFeedUpdates` but ensures the updates returned are the first updates
-  > published in minPublishTime. That is, if there are multiple updates for a given timestamp,
-  > this method will return the first update."
+  Pinned to `pyth-crosschain` commit **`807ff575a9090cee99b9e1a30dc23edf3522fe1b`**, read
+  2026-09-15.
 
-  Signature:
+  `target_chains/ethereum/contracts/contracts/pyth/Pyth.sol` **lines 612–631** —
+  `parsePriceFeedUpdatesUnique` forwards to `parsePriceFeedUpdatesWithConfig` with
+  `checkUniqueness = true`:
 
   ```solidity
-  function parsePriceFeedUpdatesUnique(
-      bytes[] calldata updateData,
-      bytes32[] calldata priceIds,
-      uint64 minPublishTime,
-      uint64 maxPublishTime
-  ) external payable returns (PythStructs.PriceFeed[] memory priceFeeds);
+  (priceFeeds, ) = parsePriceFeedUpdatesWithConfig(
+      updateData, priceIds, minPublishTime, maxPublishTime,
+      true,   // checkUniqueness
+      false, false
+  );
   ```
 
-  **This is not the guarantee `PHASES.md` assumes.** `PHASES.md` phase 0 asks whether it
-  "guarantees the first update at or after a given timestamp". It does not. It guarantees
-  uniqueness *at* `minPublishTime` — first update among those sharing one timestamp — while
-  still accepting any update in `[minPublishTime, maxPublishTime]`. The **caller supplies
-  `updateData`**, so with a wide window a resolver can choose which in-range update to submit.
-  This is a resolution-manipulation surface and it is **Q1**, the most important open question
-  here.
+  Same file, **lines 240–246** — an update is accepted only when:
+
+  ```solidity
+  publishTime >= context.minAllowedPublishTime &&
+  publishTime <= context.maxAllowedPublishTime &&
+  (!context.checkUniqueness ||
+      context.minAllowedPublishTime > prevPublishTime)
+  ```
+
+  `prevPublishTime` is the publish time of the immediately preceding update for that feed, and it
+  is **part of the signed Merkle payload** (`extractPriceInfoFromMerkleProof`, lines 224–229) — a
+  submitter cannot forge it. So with `minPublishTime = deadline`, the only update that passes is
+  the one whose predecessor was published *before* the deadline: **the first update at or after
+  the deadline**.
+
+  The caller supplies `updateData`, but **exactly one update per feed can satisfy the check, at
+  any window size**. Submitter discretion is zero. The window bounds liveness during feed gaps
+  and nothing else.
+
+  `target_chains/ethereum/sdk/solidity/MockPyth.sol` **line 133** applies the same condition
+  (`prevPublishTime < minAllowedPublishTime`), and `createPriceFeedUpdateData` takes
+  `prevPublishTime` as its eighth argument (**lines 281–290**) — so every case is testable on
+  anvil without a network.
+
+  **Resolution rule decided: see ADR-0005.**
 
 - `getUpdateFee(updateData)` returns the fee, which must be forwarded as `msg.value`.
 
@@ -320,19 +396,20 @@ Client examples also use `viem`. Go and Python clients exist, so the scheme is n
 
 ## 8. Open questions
 
-Each becomes a `needs-jay` issue. Phase 0 does not exit until every one is answered.
+All nine were answered by Jay on 2026-09-17. The answers are recorded here so later phases
+build against the decision, not the question.
 
-| # | Question | Blocks |
-|---|---|---|
-| **Q1** | **Pyth resolution window.** `parsePriceFeedUpdatesUnique` does not give "first update at or after the deadline" (§7). Setting `minPublishTime == maxPublishTime == deadline` makes resolution deterministic but reverts if no update carries exactly that timestamp — a liveness risk. A window makes it live but lets the submitter pick within it. Which trade, and what window? This decides whether resolution is manipulable. | Phase 3 |
-| **Q2** | **Session model.** An x402 channel is `(payer, payerAuthorizer, receiver, receiverAuthorizer, token, withdrawDelay, salt)` and the receiver is fixed per channel. Tickline assumed "agent escrow" ≈ our own concept. Confirm that one agent ↔ one channel ↔ one Tickline session, and that `salt` is how an agent runs concurrent sessions. | Phase 4 |
-| **Q3** | **`withdrawDelay` floor vs. epoch length.** The minimum is **15 minutes**. An agent can `initiateWithdraw` at any moment; unclaimed vouchers become unclaimable once `finalizeWithdraw` runs. Our settlement worker must therefore claim within the agent's chosen delay. Do we require a minimum `withdrawDelay` in our 402 (we set `extra.withdrawDelay`), and how does it relate to epoch length and `commitGrace`? | Phases 4, 5 |
-| **Q4** | **I7 restatement.** The spec has no reserve/release step (§2), so I7's "outstanding reservations + captured cumulative" wording describes a mechanism that does not exist. Proposed replacement: *for every channel, `chargedCumulativeAmount <= signedMaxClaimable <= balance` at all times, and a fill is committed only after the resource handler succeeds.* Confirm. | Phase 4 |
-| **Q5** | **`uint128`, not `uint256`.** Voucher amounts and claim totals are `uint128`. Do Tickline's own `PositionReceipt` amounts follow, or stay `uint256`? Mixing widths at a boundary is where truncation bugs live (I15). | Phase 2 |
-| **Q6** | **Facilitator.** The spec assumes a facilitator for `/verify`, `/settle`, `/supported` and gasless deposits. Do we run our own (`x402-facilitator-local`), use a public one, or verify EOA vouchers locally (permitted when mirrored state is fresh)? This is a dependency and a trust decision. | Phases 4, 5 |
-| **Q7** | Exact npm versions to pin for `@x402/*`. Not yet determined. | Phase 2 |
-| **Q8** | Adopt `x402-types` (Apache-2.0) for V2 envelope types, or hand-roll in `protocol`? | Phase 2 |
-| **Q9** | Invariants **I4, I5, I6** remain Claude's reconstruction (ADR-0002), unchanged by this research. | Phase 4 |
+| # | Question | Decision | Where |
+|---|---|---|---|
+| Q1 | Pyth resolution window | `parsePriceFeedUpdatesUnique(updateData, [feedId], deadline, deadline + 60)`. The uniqueness check admits exactly one update per feed, so there is no manipulation surface; the 60 s window only bounds liveness and is a vault constant. My original reading was wrong: I took the `IPyth.sol` NatSpec literally and did not read `Pyth.sol`. Resolution is permissionless from the deadline, ignores the confidence interval, and has a void path at `deadline + 24h`. | #6, ADR-0005, §7 |
+| Q2 | Session model | One x402 channel is one session; agents run concurrent sessions by varying `salt`. Positions and receipts are keyed by `(market, payer)`, never by `channelId`. Only EOA `payerAuthorizer` values are accepted; `payerAuthorizer == address(0)` (EIP-1271) is rejected with a typed error, so voucher verification is a pure signature check with no RPC call. | #9 |
+| Q3 | `withdrawDelay` vs epochs | No coupling exists: epoch commits go to `TicklineVault`, claims go to `x402BatchSettlement`. The 402 advertises `extra.withdrawDelay = 3600`, and the engine rejects vouchers on any channel with `withdrawDelay < 3600`. `WithdrawInitiated` is a priority event: the session actor stops accepting vouchers on that channel and the settlement worker claims it immediately under an outbox intent. An alert fires if the claim is not confirmed by `finalizeAfter - 1800`. | #8, §1 |
+| Q4 | I7 restatement | Rewritten in `CLAUDE.md` §4, with two additions beyond the proposal: no pending withdrawal, and `balance`/`totalClaimed` read at confirmation depth. **I16 (money before shares)** added alongside it. | #7 |
+| Q5 | `uint128` vs `uint256` | Every amount and share count in `PositionReceipt` is `uint128` (`u128` in Rust): `yesShares`, `noShares`, `costPaid`, `feesPaid`. No width conversion at the escrow boundary. LMSR math stays signed WAD inside `lmsr`; narrowing to `u128` happens only at the `lmsr` boundary, checked, with I15 rounding. | #9 |
+| Q6 | Facilitator | None: not our own, not `x402-facilitator-local`, not a public one. See §3. Running or depending on a facilitator is out of scope. | #9 |
+| Q7 | npm pins | Exact versions, no `^` or `~`, pinned in the Phase 2 PR that first adds `@x402/*`. | #9 |
+| Q8 | `x402-types` | Not adopted; `protocol` writes its own V2 envelope types. See §6. | #9 |
+| Q9 | I4, I5, I6 | Confirmed as written. ADR-0002 updated. | #7 |
 
 ---
 

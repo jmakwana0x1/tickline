@@ -14,7 +14,8 @@ have sqlx   || { say "sqlx-cli"; cargo install sqlx-cli --no-default-features --
 have cargo-mutants  || { say "cargo-mutants";  cargo install cargo-mutants; }
 have cargo-llvm-cov || { say "cargo-llvm-cov"; cargo install cargo-llvm-cov; rustup component add llvm-tools-preview; }
 
-have forge || { say "foundry"; curl -L https://foundry.paradigm.xyz | bash; "$HOME/.foundry/bin/foundryup"; }
+# Same tag CI installs (see .github/actions/setup). Upgrades are their own PR.
+have forge || { say "foundry v1.8.1"; curl -L https://foundry.paradigm.xyz | bash; "$HOME/.foundry/bin/foundryup" --install v1.8.1; }
 
 if ! have node; then
   say "node $(cat .nvmrc) via nvm"
