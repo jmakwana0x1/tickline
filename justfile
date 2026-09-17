@@ -65,6 +65,7 @@ lint:
     cd {{contracts}} && forge build --deny warnings
     pnpm -r lint
     @bash scripts/shellcheck.sh
+    @bash scripts/test-no-stray-files.sh
 
 # Assert lmsr and protocol stay zero-IO (CLAUDE.md section 3).
 deps-check:
