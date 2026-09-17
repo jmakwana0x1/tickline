@@ -20,6 +20,7 @@ step() { printf '\n\033[1m── gate %s › %s\033[0m\n' "$PHASE" "$*"; }
 gate_0() {
   # `just doctor` is deliberately NOT here: it checks the developer's machine, and CI
   # runners carry a different toolchain on purpose. The gate checks the commit.
+  step "gate self-test"       ; bash scripts/test-gate.sh
   step "format"               ; just fmt-check
   step "lint"                 ; just lint
   step "crate boundaries"     ; just deps-check
@@ -31,15 +32,22 @@ gate_0() {
   step "github configuration" ; just gh-verify
 }
 
+# Rules for every gate function below (issue #17, enforced by scripts/test-gate.sh):
+#   - one command per step, never `a && b`. Under `set -e`, bash does not exit when a
+#     non-final command in an `&&` list fails, so the gate would carry on past it;
+#   - never `cd`. Point tools at their project instead (`--manifest-path`, `--root`), so a
+#     failed step cannot leave later steps running from the wrong directory.
+ENGINE=(--manifest-path engine/Cargo.toml)
+
 gate_1() {
-  step "lmsr suites"          ; cd engine && cargo test -p lmsr --all-features && cd ..
+  step "lmsr suites"          ; cargo test "${ENGINE[@]}" -p lmsr --all-features
   step "lmsr differential"    ; just vectors
   step "lmsr mutants"         ; just mutants lmsr
   step "lmsr coverage >= 95%" ; bash scripts/check-coverage.sh lmsr 95
 }
 
 gate_2() {
-  step "protocol suites"      ; cd engine && cargo test -p protocol --all-features && cd ..
+  step "protocol suites"      ; cargo test "${ENGINE[@]}" -p protocol --all-features
   step "cross-stack vectors"  ; just vectors
   step "protocol mutants"     ; just mutants protocol
 }
@@ -52,13 +60,15 @@ gate_3() {
 }
 
 gate_4() {
-  step "engine core"          ; cd engine && cargo test -p ledger -p market -p api --all-features && cd ..
-  step "coverage >= 85%"      ; bash scripts/check-coverage.sh ledger 85 && bash scripts/check-coverage.sh market 85
+  step "engine core"          ; cargo test "${ENGINE[@]}" -p ledger -p market -p api --all-features
+  step "ledger coverage >= 85%"; bash scripts/check-coverage.sh ledger 85
+  step "market coverage >= 85%"; bash scripts/check-coverage.sh market 85
 }
 
 gate_5() {
-  step "settlement + indexer" ; cd engine && cargo test -p settlement -p indexer --all-features && cd ..
-  step "coverage >= 85%"      ; bash scripts/check-coverage.sh settlement 85 && bash scripts/check-coverage.sh indexer 85
+  step "settlement + indexer" ; cargo test "${ENGINE[@]}" -p settlement -p indexer --all-features
+  step "settlement coverage >= 85%"; bash scripts/check-coverage.sh settlement 85
+  step "indexer coverage >= 85%"   ; bash scripts/check-coverage.sh indexer 85
 }
 
 gate_6() {
@@ -73,19 +83,27 @@ gate_7() {
 }
 
 gate_8() {
-  step "fork suite"           ; cd contracts && FOUNDRY_PROFILE=ci forge test --match-path 'test/fork/*' && cd ..
+  # The `fork` profile, not `ci`: `ci` inherits `no_match_path = "test/fork/*"`, so
+  # `--match-path 'test/fork/*'` under `ci` would select nothing and pass vacuously.
+  step "fork suite"           ; FOUNDRY_PROFILE=fork forge test --root contracts
   step "deploy smoke"         ; bash scripts/post-deploy-smoke.sh
   step "dashboard"            ; pnpm --filter @tickline/dashboard test
 }
 
-gate_9() { step "twap template"; cd engine && cargo test -p twap --all-features && cd ..; }
+gate_9() {
+  step "twap template"        ; cargo test "${ENGINE[@]}" -p twap --all-features
+}
+
+# Resolve the commit before running anything. As a plain assignment its failure stops the gate;
+# inside a printf argument (as it used to be) a failure was ignored and the log named no commit.
+COMMIT="$(git rev-parse --short HEAD)"
 
 for (( PHASE=0; PHASE<=TARGET; PHASE++ )); do
   printf '\n\033[1;36m══ phase %s ═══════════════════════════════════════\033[0m\n' "$PHASE"
   "gate_${PHASE}"
 done
 
-printf '\n\033[1;32m✓ gate %s green\033[0m (phases 0..%s, %ss)\n' \
-  "$TARGET" "$TARGET" "$(( $(date -u +%s) - START ))"
-printf 'commit %s\n' "$(git rev-parse --short HEAD)"
+END="$(date -u +%s)"
+printf '\n\033[1;32m✓ gate %s green\033[0m (phases 0..%s, %ss)\n' "$TARGET" "$TARGET" "$(( END - START ))"
+printf 'commit %s\n' "$COMMIT"
 echo "record this run in docs/STATUS.md and on the phase tracking issue."
