@@ -68,8 +68,13 @@ randomness in tests or agents. No network access in any suite except `contracts/
 - a test is flaky. A flaky test is a bug in the system or the test, never noise to retry;
 - adding a dependency not already in the workspace manifests;
 - changing a public interface: HTTP API, contract ABI, or EIP-712 type;
-- changing CI workflows, the ruleset, or required checks;
+- changing what `required` enforces: removing or renaming a job it needs, changing the commands a required job runs, or adding conditions that can skip it;
+- changing the ruleset, workflow permissions, or secrets;
+- adding a third-party action;
+- changing `phase-gate.yml`'s commands;
 - modifying or deleting an existing test.
+
+Merge without `needs-jay`, with a one-line note in the PR body, for: adding a service container or cache to an existing job, pinning or bumping a tool version, and changes to non-required workflows (except `phase-gate.yml`) that add no permissions or secrets.
 
 **Write the ADR before the code**, not after, whenever the choice is structural. `docs/decisions/`.
 
@@ -280,6 +285,23 @@ Full detail (exact commands, templates, ruleset contents) lives in `docs/GITHUB.
 `required` is green, unless the PR is labeled `needs-jay` or hits a stop-and-ask trigger (section 2).
 In those cases Claude labels the PR `needs-jay` and stops. The ruleset requires no approving review
 (ADR-0003), so this rule, together with `required`, is the merge gate.
+
+**Authorization.** Jay's decisions are recorded on GitHub, on the PR or issue they apply to.
+
+| Jay comments | Claude does |
+|---|---|
+| `/approve <sha>` | Merges once `required` is green, if the PR head is still `<sha>`. |
+| `/approve-after <sha>` followed by required changes | Implements exactly those changes, gets `required` green, merges, then comments listing what changed. |
+| `/changes` followed by requests | Implements them, keeps `needs-jay`, and waits for a new `/approve`. |
+| `/reject` followed by a reason | Closes the PR or issue, linking the reason, and does not reopen it. |
+
+Rules:
+- An approval covers only the named commit. If the head moves for any reason other than the listed changes, or a rebase that leaves the diff unchanged, the approval is void.
+- For a decision Jay gives in a Claude Code session, Claude first posts it on the PR or issue as `Recorded from session with Jay:` followed by his words, then acts on it.
+- Claude removes `needs-jay` when it acts on an approval, never before.
+- Claude never posts a comment that starts with `/approve`, `/approve-after`, `/changes`, or `/reject`. Claude Code pushes and comments with Jay's token, so GitHub cannot tell the two apart. This rule is the control.
+
+ADR-0007 records this protocol and the enforcement it does not yet have.
 
 **Hard rules.**
 - `main` is protected: no direct pushes, linear history, the `required` aggregator check must pass.
