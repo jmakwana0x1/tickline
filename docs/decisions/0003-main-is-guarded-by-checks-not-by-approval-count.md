@@ -13,7 +13,7 @@ review, and last-push approval, with **no bypass actors**.
 Applied to this repository that combination deadlocks. Tickline is a solo repository: every PR
 is authored by `jmakwana0x1`, GitHub does not permit approving your own pull request, and with
 no bypass actors an administrator cannot override. The result is a ruleset under which *nothing
-can ever merge* — including the changes that would fix the ruleset.
+can ever merge*, including the changes that would fix the ruleset.
 
 This was found the honest way: by applying it and reasoning through the first merge.
 
@@ -22,7 +22,7 @@ This was found the honest way: by applying it and reasoning through the first me
 | Option | Cost | What it does to the invariants |
 |---|---|---|
 | Keep 1 approval, no bypass | Correct on paper, unusable | No change can reach `main` at all |
-| Keep 1 approval, add Jay as a bypass actor | Merging works | The ruleset stops binding everyone — the exact property `CLAUDE.md` §7 calls out as "the design working" |
+| Keep 1 approval, add Jay as a bypass actor | Merging works | The ruleset stops binding everyone, which is the exact property `CLAUDE.md` §7 calls out as "the design working" |
 | 0 approvals, keep every other rule | A PR can merge without a human reading it | The `required` check still blocks red code; review becomes asynchronous rather than blocking |
 
 ## Decision
@@ -41,7 +41,7 @@ The merge gate is therefore **mechanical, not social**. `required` aggregates ev
 code that fails format, lint, crate boundaries, the no-skips check, or any of the four test
 suites cannot reach `main` no matter who wants it there.
 
-Jay's review remains the thing that catches design errors — it simply happens on the PR rather
+Jay's review remains the thing that catches design errors; it simply happens on the PR rather
 than as a blocking button press, and `CLAUDE.md` §2's stop-and-ask triggers still halt work for
 a human decision.
 
@@ -63,4 +63,4 @@ asserted rule-by-rule by `just gh-verify`, which fails if any bypass actor appea
 `required` stops being the named check.
 
 Verified on 2026-09-15: a direct push to `main` was rejected with
-`GH013: Repository rule violations found for refs/heads/main` — recorded in `docs/STATUS.md`.
+`GH013: Repository rule violations found for refs/heads/main`, recorded in `docs/STATUS.md`.

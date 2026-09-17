@@ -1,4 +1,4 @@
-# Long campaigns. Allowed to fail without blocking merges — it opens an issue instead.
+# Long campaigns. Allowed to fail without blocking merges; a failure is reported as an issue.
 # Gate 7 runs the same commands in the foreground, where they DO block.
 name: nightly-deep
 

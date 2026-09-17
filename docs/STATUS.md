@@ -1,6 +1,6 @@
 # STATUS
 
-The state of the build. **Task state lives in GitHub issues, not here** — this file records
+The state of the build. **Task state lives in GitHub issues, not here.** This file records
 gates, pins, open questions, and benchmarks.
 
 Last updated: 2026-09-15
@@ -9,7 +9,7 @@ Last updated: 2026-09-15
 
 ## Current phase
 
-**Phase 0 — Spec capture and scaffold.** `.phase` = `0`.
+**Phase 0: Spec capture and scaffold.** `.phase` = `0`.
 
 Risk being retired: building against a misread x402 spec.
 
@@ -24,7 +24,7 @@ Risk being retired: building against a misread x402 spec.
 | Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
 | `docs/spec-notes.md` | ✅ researched, cited, and every question answered by Jay |
 | GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
-| Guard proofs | ✅ 4 of 4 — see below |
+| Guard proofs | ✅ 4 of 4, see below |
 | Release `phase-0` | not cut |
 
 ---
@@ -42,10 +42,10 @@ Risk being retired: building against a misread x402 spec.
 | Node | 22 | `.nvmrc` |
 | pnpm | 9.12.3 | `package.json` `packageManager` |
 | Postgres | 16.4-alpine | `docker-compose.yml`, CI service |
-| Foundry | **v1.8.1**, sha256 `37b45855…89c10` | `.github/actions/setup` — pinned and checksum-verified |
+| Foundry | **v1.8.1**, sha256 `37b45855…89c10` | `.github/actions/setup`, pinned and checksum-verified |
 | forge-std | v1.16.2 (`bf647bd`) | `contracts/lib/forge-std`, git submodule |
 | gitleaks | 8.21.2 | `.pre-commit-config.yaml` |
-| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4 — verified live on Base Sepolia |
+| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4, verified live on Base Sepolia |
 | x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
 | x402 escrow reference | not yet vendored | Phase 3, pinned by commit |
 
@@ -58,7 +58,7 @@ tracking issue.
 
 | Date | Phase | Commit | Rust | Solidity | TS | DB | Notes |
 |---|---|---|---|---|---|---|---|
-| 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0` — in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
+| 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0`, in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
 
 ### Guard evidence (Phase 0 exit)
 

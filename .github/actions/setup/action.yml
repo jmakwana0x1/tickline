@@ -41,7 +41,7 @@ runs:
       run: pnpm install --frozen-lockfile
 
     # Pinned, checksum-verified, and retried. The upstream action installs whatever
-    # `stable` currently points at — so the gate could change meaning without a commit —
+    # `stable` currently points at, so the gate could change meaning without a commit,
     # and its downloader has no retry, so a single connection reset turns a green commit
     # red (issue #11). Both are fixed here.
     - name: foundry (pinned v1.8.1, checksum-verified, retried)

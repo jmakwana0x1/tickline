@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        **A flaky test is a bug** — in the system or in the test, never noise to retry
+        **A flaky test is a bug**, in the system or in the test, never noise to retry
         (CLAUDE.md section 2). File it here with the seed.
 
   - type: textarea

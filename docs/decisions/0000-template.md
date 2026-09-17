@@ -1,4 +1,4 @@
-# ADR-0000: <title in the imperative — "Use X for Y">
+# ADR-0000: <title in the imperative, e.g. "Use X for Y">
 
 - **Status:** proposed | accepted | superseded by ADR-XXXX
 - **Date:** YYYY-MM-DD

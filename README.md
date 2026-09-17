@@ -10,10 +10,10 @@ the vault.
 
 The operator holds the pricing, so the operator is the thing that must not be trusted. Every
 agent leaves each request holding a signed receipt. If the committed position is smaller than
-the receipt, the receipt wins and the operator's bond pays — with no timing, ordering, or gas
+the receipt, the receipt wins and the operator's bond pays, with no timing, ordering, or gas
 condition under which it does not.
 
-> **Status: Phase 0 of 9 — spec capture and scaffold.** Nothing here prices real money yet.
+> **Status: Phase 0 of 9, spec capture and scaffold.** Nothing here prices real money yet.
 > `PHASES.md` is the build plan; `docs/STATUS.md` is where the build actually is.
 
 ---
@@ -22,17 +22,17 @@ condition under which it does not.
 
 | If you want to | Read |
 |---|---|
-| Understand how work happens here | [`CLAUDE.md`](CLAUDE.md) — the working agreement |
+| Understand how work happens here | [`CLAUDE.md`](CLAUDE.md), the working agreement |
 | See what gets built, and when | [`PHASES.md`](PHASES.md) |
 | Know what is actually done | [`docs/STATUS.md`](docs/STATUS.md) |
-| Know what must never break | [`CLAUDE.md` §4](CLAUDE.md#4-invariants) — the sixteen invariants |
+| Know what must never break | [`CLAUDE.md` §4](CLAUDE.md#4-invariants), the sixteen invariants |
 | Know why something is the way it is | [`docs/decisions/`](docs/decisions/) |
 | Work on the repo itself | [`docs/GITHUB.md`](docs/GITHUB.md) |
 
 ## Getting set up
 
 ```bash
-scripts/dev-setup.sh     # rust, just, foundry, node, pnpm, sqlx-cli — idempotent
+scripts/dev-setup.sh     # rust, just, foundry, node, pnpm, sqlx-cli; idempotent
 just doctor              # what is installed, and the install line for what is not
 just up                  # postgres + anvil + migrations
 just test                # every stack
@@ -60,18 +60,18 @@ Full annotated tree in [`CLAUDE.md` §3](CLAUDE.md#3-repository-layout).
 Money software earns trust by the kinds of failure it has already survived, so the suite is
 built around failure kinds rather than coverage percentages:
 
-- **Differential** — Rust LMSR against 60-digit `mpmath`, to within 1 wei, rounding toward the
+- **Differential**: Rust LMSR against 60-digit `mpmath`, to within 1 wei, rounding toward the
   vault. Solidity against the same vectors.
-- **Cross-stack** — Rust, Solidity, and TypeScript must produce byte-identical EIP-712 digests
+- **Cross-stack**: Rust, Solidity, and TypeScript must produce byte-identical EIP-712 digests
   from one committed vector file.
-- **Property** — random fill sequences, random agents, random markets, with invariants asserted
+- **Property**: random fill sequences, random agents, random markets, with invariants asserted
   after every step.
-- **Invariant (Foundry)** — handler-based, including a deliberately dishonest operator.
-- **Concurrency** — 50 agents × 5 markets firing at once: no voucher accepted twice, no
+- **Invariant (Foundry)**: handler-based, including a deliberately dishonest operator.
+- **Concurrency**: 50 agents × 5 markets firing at once: no voucher accepted twice, no
   reservation leaked.
-- **Crash and reorg injection** — fail-points at every outbox transition; reorgs deeper than the
+- **Crash and reorg injection**: fail-points at every outbox transition; reorgs deeper than the
   confirmation depth must halt and alert rather than quietly diverge.
-- **Mutation** — surviving mutants on public functions are a gate failure, not a metric.
+- **Mutation**: surviving mutants on public functions are a gate failure, not a metric.
 
 A flaky test is a bug, never noise to retry. A counterexample becomes a permanent unit test
 before its phase can close.

@@ -9,7 +9,7 @@ banned).
 
 Every claim below carries a source URL and the date it was read. Where the documentation is
 ambiguous the ambiguity is recorded in §8 rather than resolved by picking the convenient
-reading — the convenient reading is the one that loses money.
+reading. The convenient reading is the one that loses money.
 
 **Primary sources**, read 2026-09-15 and re-checked 2026-09-17. Source files are pinned by commit:
 x402 at `84ffb6412a1f2f45a62971c5549eff794281c099` (the only commit that has touched `x402BatchSettlement.sol`), Pyth at `807ff575a9090cee99b9e1a30dc23edf3522fe1b`.
@@ -62,11 +62,11 @@ struct ChannelConfig {
 
 `channelId = EIP712Hash(ChannelConfig)` under the `x402 Batch Settlement` domain. The hash binds
 config to `chainId` and the deployed contract address, so the same config yields different IDs
-across chains. The config is **immutable** — changing any parameter means a new channel.
+across chains. The config is **immutable**: changing any parameter means a new channel.
 
-### EIP-712 types — verbatim from the contract (lines 92–107)
+### EIP-712 types, verbatim from the contract (lines 92 to 107)
 
-**Domain:** `EIP712("x402 Batch Settlement", "1")` — contract constructor, line 185.
+**Domain:** `EIP712("x402 Batch Settlement", "1")`, contract constructor, line 185.
 
 ```
 ChannelConfig(address payer,address payerAuthorizer,address receiver,address receiverAuthorizer,address token,uint40 withdrawDelay,bytes32 salt)
@@ -114,9 +114,9 @@ escrow is `balance - totalClaimed`.
 
 | Phase | Mechanism |
 |---|---|
-| **Deposit** | Client deposits via `eip3009` (`receiveWithAuthorization`, e.g. USDC) or `permit2` fallback. Gasless — sponsored by the facilitator. Channel is created implicitly on first deposit. |
+| **Deposit** | Client deposits via `eip3009` (`receiveWithAuthorization`, e.g. USDC) or `permit2` fallback. Gasless, sponsored by the facilitator (Tickline uses none; see §3). Channel is created implicitly on first deposit. |
 | **Voucher** | Each paid request carries a cumulative voucher. |
-| **Claim** | `claim(voucherClaims)` (`msg.sender` must be `receiver` or `receiverAuthorizer`) or `claimWithSignature(claims, signature)` (relay-friendly, anyone submits with a `ClaimBatch` signature from `receiverAuthorizer`). **No token transfer occurs** — accounting only. |
+| **Claim** | `claim(voucherClaims)` (`msg.sender` must be `receiver` or `receiverAuthorizer`) or `claimWithSignature(claims, signature)` (relay-friendly, anyone submits with a `ClaimBatch` signature from `receiverAuthorizer`). **No token transfer occurs**; accounting only. |
 | **Settle** | `settle(receiver, token)` sweeps all claimed-but-unsettled funds in one transfer. **Permissionless.** |
 | **Refund** | Cooperative: `refund(config, amount)` by receiver/receiverAuthorizer, or `refundWithSignature(...)`. Returns up to `balance - totalClaimed`. |
 | **Withdraw** | Client escape hatch: `initiateWithdraw` → wait `withdrawDelay` → `finalizeWithdraw`. |
@@ -174,20 +174,20 @@ create-once event.
 ## 2. The "up to" ceiling
 
 **Confirmed: the ceiling is part of batch settlement itself.** `PHASES.md`'s assumption holds.
-(`upto` is a *separate* scheme where value moves immediately per request — not what we use.)
+(`upto` is a *separate* scheme where value moves immediately per request, and not what we use.)
 
 > "The scheme supports **dynamic pricing**: the client authorizes a maximum per-request, and the
 > server charges the actual cost within that ceiling."
 
 The mechanism:
 
-- The server tracks `chargedCumulativeAmount` — actual accumulated cost for the channel.
+- The server tracks `chargedCumulativeAmount`, the actual accumulated cost for the channel.
 - For each request the client sets `voucher.maxClaimableAmount = chargedCumulativeAmount + amount`,
   where `amount` is `PaymentRequirements.amount`, the per-request maximum.
 - The server verifies **exactly** that equality, and rejects with
   `invalid_batch_settlement_evm_cumulative_amount_mismatch` plus a corrective 402 otherwise.
 - On success: `chargedCumulativeAmount += actualPrice`, where `actualPrice <= amount`.
-- The unused remainder is never "released" — it simply never becomes part of the next voucher's
+- The unused remainder is never "released"; it simply never becomes part of the next voucher's
   base. There is no reservation to leak.
 
 **This materially simplifies Tickline's I7**, which was rewritten on this basis (#7, `CLAUDE.md`
@@ -268,7 +268,7 @@ Three types: `deposit`, `voucher`, `refund`. Each carries the full `channelConfi
 Voucher-only response has `transaction: ""` and `amount: ""`, with the real figure in
 `extra.chargedAmount` and a snapshot in `extra.channelState`.
 
-**Critical client rule** — and a good model for our agents:
+**Critical client rule**, and a good model for our agents:
 
 > "PAYMENT-RESPONSE extra is untrusted. The client updates local state from its own previous
 > state plus `extra.chargedAmount` […] It MUST NOT copy `extra.channelState` into that local
@@ -278,8 +278,8 @@ Voucher-only response has `transaction: ""` and `amount: ""`, with the real figu
 
 On cumulative mismatch the server returns `accepts[].extra.channelState` **and**
 `accepts[].extra.voucherState` (`signedMaxClaimable` + `signature`) so the client can verify its
-own prior signature before adopting the server's number. Tickline's API must implement this path
-— it is how a desynced agent recovers.
+own prior signature before adopting the server's number. Tickline's API must implement this path,
+because it is how a desynced agent recovers.
 
 ---
 
@@ -293,14 +293,14 @@ Deployed to deterministic addresses via CREATE2 on every supported chain:
 | `ERC3009DepositCollector` | `0x4020806089470a89826cB9fB1f4059150b550004` |
 | `Permit2DepositCollector` | `0x4020425FAf3B746C082C2f942b4E5159887B0005` |
 
-- **Builds under Foundry: yes.** `contracts/evm/` in the x402 repo *is* a Foundry project —
+- **Builds under Foundry: yes.** `contracts/evm/` in the x402 repo *is* a Foundry project:
   `foundry.toml`, `remappings.txt`, `lib/forge-std`, `lib/openzeppelin-contracts`, `lib/permit2`,
   and a committed gas snapshot.
 - **Audited**: three Cantina reports in `contracts/evm/audits/` (Feb, Mar, May 2026).
 - Uses `ReentrancyGuardTransient` (EIP-1153), so it "must only be deployed on chains where that
   opcode is supported". Base Sepolia is Cancun-capable; our `foundry.toml` already sets
   `evm_version = "cancun"`.
-- **We do not need to vendor or reimplement it** — it is deployed. We integrate against the
+- **We do not need to vendor or reimplement it**: it is deployed. We integrate against the
   canonical address and use a local deployment only for anvil tests.
 
 ---
@@ -332,7 +332,7 @@ in `docs/STATUS.md` (Q7).
   `x402-chain-eip155`, `x402-chain-solana`.
 - **Full x402 V2 support** in `x402-axum` and `x402-reqwest`.
 - **Confirmed: it does not implement batch settlement.** Its roadmap lists `upto` and `deferred`
-  as future work; batch settlement is not mentioned. `PHASES.md`'s assertion holds — the seller
+  as future work; batch settlement is not mentioned. `PHASES.md`'s assertion holds: the seller
   side is ours.
 - **Not adopted (Q8).** `protocol` writes its own V2 envelope types: they are a handful of
   structs, the batch-settlement `extra` fields are not in `x402-types`, and `protocol` stays
@@ -352,7 +352,7 @@ in `docs/STATUS.md` (Q7).
   Pinned to `pyth-crosschain` commit **`807ff575a9090cee99b9e1a30dc23edf3522fe1b`**, read
   2026-09-15.
 
-  `target_chains/ethereum/contracts/contracts/pyth/Pyth.sol` **lines 612–631** —
+  `target_chains/ethereum/contracts/contracts/pyth/Pyth.sol` **lines 612 to 631**:
   `parsePriceFeedUpdatesUnique` forwards to `parsePriceFeedUpdatesWithConfig` with
   `checkUniqueness = true`:
 
@@ -364,7 +364,7 @@ in `docs/STATUS.md` (Q7).
   );
   ```
 
-  Same file, **lines 240–246** — an update is accepted only when:
+  Same file, **lines 240 to 246**: an update is accepted only when:
 
   ```solidity
   publishTime >= context.minAllowedPublishTime &&
@@ -374,7 +374,7 @@ in `docs/STATUS.md` (Q7).
   ```
 
   `prevPublishTime` is the publish time of the immediately preceding update for that feed, and it
-  is **part of the signed Merkle payload** (`extractPriceInfoFromMerkleProof`, lines 224–229) — a
+  is **part of the signed Merkle payload** (`extractPriceInfoFromMerkleProof`, lines 224 to 229), so a
   submitter cannot forge it. So with `minPublishTime = deadline`, the only update that passes is
   the one whose predecessor was published *before* the deadline: **the first update at or after
   the deadline**.
@@ -385,7 +385,7 @@ in `docs/STATUS.md` (Q7).
 
   `target_chains/ethereum/sdk/solidity/MockPyth.sol` **line 133** applies the same condition
   (`prevPublishTime < minAllowedPublishTime`), and `createPriceFeedUpdateData` takes
-  `prevPublishTime` as its eighth argument (**lines 281–290**) — so every case is testable on
+  `prevPublishTime` as its eighth argument (**lines 281 to 290**), so every case is testable on
   anvil without a network.
 
   **Resolution rule decided: see ADR-0005.**
@@ -419,5 +419,5 @@ build against the decision, not the question.
 |---|---|---|
 | USDC is 6 decimals on Base | every amount conversion (I15) | read the token contract on Base Sepolia |
 | Solady's `expWad`/`lnWad` port to Rust unchanged | Phase 1's whole numerical method | port, then diff against `mpmath` at 60 digits |
-| ~~`x402BatchSettlement` is deployed at the canonical address on Base Sepolia~~ | — | **verified 2026-09-15**: 22,353 bytes of code at that address, and all three type hashes read back matching (§1) |
-| ~~Base Sepolia supports EIP-1153~~ | — | **implied verified**: the contract uses `ReentrancyGuardTransient` and is deployed and callable there |
+| ~~`x402BatchSettlement` is deployed at the canonical address on Base Sepolia~~ | n/a | **verified 2026-09-15**: 22,353 bytes of code at that address, and all three type hashes read back matching (§1) |
+| ~~Base Sepolia supports EIP-1153~~ | n/a | **implied verified**: the contract uses `ReentrancyGuardTransient` and is deployed and callable there |

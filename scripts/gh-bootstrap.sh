@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 
-command -v gh >/dev/null || { echo "gh not installed — see 'just doctor'" >&2; exit 1; }
+command -v gh >/dev/null || { echo "gh not installed; see 'just doctor'" >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq not installed (apt install jq)" >&2; exit 1; }
 gh auth status >/dev/null || { echo "run 'gh auth login' first" >&2; exit 1; }
 
@@ -66,4 +66,4 @@ else
   echo "  created"
 fi
 
-say "done — now run: just gh-verify"
+say "done. Now run: just gh-verify"

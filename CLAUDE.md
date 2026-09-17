@@ -60,7 +60,7 @@ this mechanically (`scripts/check-no-skipped-tests.sh`).
 **Determinism over convenience.** No wall-clock reads outside an injected `Clock`. No unseeded
 randomness in tests or agents. No network access in any suite except `contracts/test/fork/`.
 
-**Stop and ask** — open a `needs-jay` issue and stop — when any of these is true:
+**Stop and ask** (open a `needs-jay` issue and stop) when any of these is true:
 - a spec question cannot be answered from a cited source in `docs/spec-notes.md`;
 - an invariant in section 4 would need to change;
 - a fix requires touching a phase that is already gated;
@@ -148,7 +148,7 @@ these IDs by name so a failure points straight back here.
 An invariant is never "mostly" true. If one cannot hold, the system **halts** that market rather
 than continuing in an unknown state.
 
-### Math — enforced by `engine/crates/lmsr` and mirrored in Solidity
+### Math: enforced by `engine/crates/lmsr` and mirrored in Solidity
 
 | ID | Statement |
 |---|---|
@@ -156,7 +156,7 @@ than continuing in an unknown state.
 | **I3** | **Bounded loss.** `subsidy >= C(0,0)`, and for any sequence of fills, `subsidy + collected >= max payout`. The creator's worst case is known before the first trade. |
 | **I15** | **Rounding favours the vault.** Every WAD → USDC base-unit conversion rounds **costs up** and **shares down**. Never the reverse, never "round half to even", no exceptions for "it's only a wei". |
 
-### Onchain — enforced by `TicklineVault`
+### Onchain: enforced by `TicklineVault`
 
 | ID | Statement |
 |---|---|
@@ -165,7 +165,7 @@ than continuing in an unknown state.
 | **I11** | **No double claim.** A `(market, agent)` pair is paid at most once. `claim` and `claimWithReceipt` share one `claimed` flag. |
 | **I12** | **A dishonest commit is always slashable.** If the operator commits shares below those in a valid signed receipt whose epoch <= the final committed epoch, the receipt holder is made whole from the bond and the operator is slashed. There is no ordering, timing, or gas condition under which the receipt loses. |
 
-### Engine — enforced by `ledger`, `market`, `api`
+### Engine: enforced by `ledger`, `market`, `api`
 
 | ID | Statement |
 |---|---|
@@ -182,7 +182,7 @@ by the Phase 5 deadline-pressure test and by an alert metric in production. I16 
 `ledger` and `market`, asserted by the Phase 4 property tests after every step, and at quiescence
 in every Phase 6 scenario. IDs are never renumbered; a new invariant takes the next free number.
 
-### Settlement — enforced by `settlement`, `indexer`
+### Settlement: enforced by `settlement`, `indexer`
 
 | ID | Statement |
 |---|---|
@@ -262,7 +262,7 @@ in CI is a `needs-jay` bug in the gate itself.
 
 ## 7. The GitHub loop
 
-Full detail — exact commands, templates, ruleset contents — lives in `docs/GITHUB.md`. The shape:
+Full detail (exact commands, templates, ruleset contents) lives in `docs/GITHUB.md`. The shape:
 
 1. **Phase opens.** Create the milestone and a tracking issue from the phase template. Break the
    phase's Build and Tests sections into slice issues whose acceptance criteria *are test names*.
@@ -284,7 +284,7 @@ In those cases Claude labels the PR `needs-jay` and stops. The ruleset requires 
 - Every PR closes an issue. Every issue belongs to a milestone.
 - Secrets never enter the repo; gitleaks runs pre-commit and in CI.
 - Task state lives in **GitHub issues**, not in markdown. `docs/STATUS.md` records gates, versions,
-  and open questions — not a to-do list.
+  and open questions. It is not a to-do list.
 
 ---
 

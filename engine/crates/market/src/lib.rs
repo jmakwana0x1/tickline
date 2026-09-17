@@ -1,6 +1,6 @@
 //! The market actor: one per market, owns LMSR state, executes fills, advances epochs.
 //!
-//! Phase 4 fills this in. The actor never reads a wall clock directly — time arrives through
+//! Phase 4 fills this in. The actor never reads a wall clock directly; time arrives through
 //! an injected [`Clock`] so every epoch boundary is testable to the second (CLAUDE.md section 2).
 
 #![forbid(unsafe_code)]

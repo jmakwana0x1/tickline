@@ -9,7 +9,7 @@ row() { # <name> <version-cmd> <install-hint> [optional]
   if command -v "${name%% *}" >/dev/null 2>&1; then
     printf '  \033[32m✓\033[0m %-12s %s\n' "$name" "$(eval "$vcmd" 2>/dev/null | head -1)"
   elif [[ -n "$optional" ]]; then
-    printf '  \033[33m·\033[0m %-12s optional — %s\n' "$name" "$hint"
+    printf '  \033[33m·\033[0m %-12s optional: %s\n' "$name" "$hint"
   else
     printf '  \033[31m✗\033[0m %-12s %s\n' "$name" "$hint"
     MISSING=1

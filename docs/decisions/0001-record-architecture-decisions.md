@@ -8,7 +8,7 @@
 ## Context
 
 Tickline is built in phases, across four languages, by an agent and a human who will both
-forget why. The expensive questions here are not "what does this code do" — that is readable —
+forget why. The expensive questions here are not "what does this code do" (that is readable)
 but "why is the rounding in that direction", "why is the bond sized like that", "why does the
 indexer halt instead of retrying". Those answers live in the gap between the code and the spec,
 and they evaporate.
@@ -42,7 +42,7 @@ An ADR is required when any of these is true:
 - a dependency is vendored, pinned, or forked;
 - a static-analysis finding is suppressed;
 - gas regresses more than 5%;
-- a future reader would ask "why was it done this way?" — the catch-all, and the one that fires
+- a future reader would ask "why was it done this way?": the catch-all, and the one that fires
   most often.
 
 ## Consequences
@@ -51,7 +51,7 @@ Decisions become slower to make and much cheaper to revisit. A reviewer can ask 
 covers this?" and get a file name. The cost is real: some ADRs will be written for decisions
 nobody ever questions, and that is the cheaper failure.
 
-The risk is ADRs drifting out of date. The `superseded by` rule is what contains it — a stale
+The risk is ADRs drifting out of date. The `superseded by` rule is what contains it: a stale
 ADR is still an accurate record of what was believed on its date.
 
 ## How this is enforced

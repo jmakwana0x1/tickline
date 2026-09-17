@@ -1,7 +1,7 @@
 # Three profiles (PHASES.md phase 0):
-#   default — fast feedback while writing code
-#   ci      — what the gate runs; more fuzz runs, deeper invariant campaigns
-#   deep    — nightly and gate 7; long campaigns that find what `ci` misses
+#   default: fast feedback while writing code
+#   ci:      what the gate runs; more fuzz runs, deeper invariant campaigns
+#   deep:    nightly and gate 7; long campaigns that find what `ci` misses
 [profile.default]
 src = "src"
 test = "test"

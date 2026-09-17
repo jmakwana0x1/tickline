@@ -13,7 +13,7 @@ eq()   { # <label> <expected> <actual>
   # field being wrong. The default CI GITHUB_TOKEN cannot see merge-strategy flags; saying
   # "expected true, got null" there would be a false failure.
   if [[ "$3" == "null" ]]; then
-    warn "$1: not visible to this token (expected '$2') — verified by the gh-verify workflow"
+    warn "$1: not visible to this token (expected '$2'); verified by the gh-verify workflow"
   elif [[ "$2" == "$3" ]]; then
     ok "$1 = $2"
   else
@@ -21,7 +21,7 @@ eq()   { # <label> <expected> <actual>
   fi
 }
 
-command -v gh >/dev/null || { echo "gh not installed — see 'just doctor'" >&2; exit 1; }
+command -v gh >/dev/null || { echo "gh not installed; see 'just doctor'" >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq not installed (apt install jq)" >&2; exit 1; }
 if ! gh auth status >/dev/null 2>&1; then
   if [[ -n "${CI:-}" ]]; then
@@ -58,7 +58,7 @@ done
 echo "3. branch ruleset on main"
 RS="$(gh api "repos/$REPO/rulesets" -q '.[] | select(.name=="main")')"
 if [[ -z "$RS" ]]; then
-  bad "no ruleset named 'main' — run 'just gh-bootstrap'"
+  bad "no ruleset named 'main'; run 'just gh-bootstrap'"
 else
   id="$(jq -r .id <<<"$RS")"
   FULL="$(gh api "repos/$REPO/rulesets/$id")"

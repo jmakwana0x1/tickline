@@ -64,6 +64,8 @@ lint:
     cd {{engine}} && cargo clippy --workspace --all-targets --all-features -- -D warnings
     cd {{contracts}} && forge build --deny warnings
     pnpm -r lint
+    @bash scripts/test-no-em-dash.sh
+    @bash scripts/check-no-em-dash.sh
     @bash scripts/shellcheck.sh
     @bash scripts/test-no-stray-files.sh
 

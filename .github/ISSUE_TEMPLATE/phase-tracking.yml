@@ -22,7 +22,7 @@ body:
       label: Slice breakdown
       description: >
         One checkbox per slice issue, created from the Build and Tests sections of this phase
-        in PHASES.md. **Jay approves this breakdown before any code is written** — that is why
+        in PHASES.md. **Jay approves this breakdown before any code is written**, which is why
         this issue opens labelled `needs-jay`.
       render: markdown
     validations: { required: true }
