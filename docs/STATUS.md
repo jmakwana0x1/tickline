@@ -18,7 +18,7 @@ Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006); Phase 1's own 
 run strictly in order, S1 to S7.
 
 **Phase 0 closed** on 2026-09-17: gate 0 green on `main` at `44dc50d`, release `phase-0`.
-Phase 0 retired this risk: building against a misread x402 spec.
+Phase 0 retired this risk: building against a misread x402 spec. Its deliverables:
 
 | Deliverable | State |
 |---|---|
