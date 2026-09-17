@@ -20,9 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Full history, so the em-dash check can read every commit message on the PR (#18).
+        with: { fetch-depth: 0 }
       - uses: ./.github/actions/setup
       - run: just fmt-check
       - run: just lint
+        env:
+          # Passed through env, never interpolated into the script: a PR body is untrusted text.
+          EM_DASH_RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
 
   deps:
     name: crate boundaries (lmsr, protocol stay zero-IO)
