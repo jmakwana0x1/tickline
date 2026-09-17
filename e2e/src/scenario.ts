@@ -3,7 +3,7 @@
  *
  * A scenario is declarative on purpose: the harness is the only thing that knows how to boot
  * anvil, deploy, migrate, and drive agents, so a new scenario is data, not code. Every
- * scenario asserts each participant's **final USDC balance to the base unit** — a scenario
+ * scenario asserts each participant's **final USDC balance to the base unit**. A scenario
  * that only checks "it didn't throw" tells us nothing (PHASES.md phase 6).
  *
  * Phase 6 implements the runner. Phase 0 defines the shape so scenarios can be written and

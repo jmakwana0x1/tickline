@@ -19,7 +19,8 @@ while (( $# )); do
   esac
 done
 
-DASH=$'—'
+# U+2014 built from its UTF-8 bytes, so this file never contains the character it bans.
+DASH="$(printf '\342\200\224')"
 status=0
 report() { echo "✗ $*" >&2; status=1; }
 

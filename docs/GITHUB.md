@@ -10,7 +10,7 @@
 
 | Setting | Value | Why |
 |---|---|---|
-| Default branch | `main` | — |
+| Default branch | `main` | none |
 | Merge strategy | **Squash only**. Merge commits and rebase merges disabled. | One commit per issue on `main`; linear history is required by the ruleset. |
 | Auto-delete head branches | on | Branches are cheap; stale branches are not. |
 | Squash commit title | PR title | The issue number rides along from the PR title. |
@@ -26,10 +26,10 @@ Defined as JSON in `.github/rulesets/main.json`, applied by `just gh-bootstrap`,
 - **Block direct pushes.** Changes reach `main` only through a PR. (Phase 0's single bootstrap
   commit is the one recorded exception, taken before the ruleset is applied.)
 - **Require a pull request**, stale approvals dismissed on new commits, conversation
-  resolution required. **0 required approving reviews** — see ADR-0003: on a solo repository an
+  resolution required. **0 required approving reviews** (ADR-0003). On a solo repository an
   approval requirement with no bypass actors deadlocks, because GitHub forbids approving your
   own PR. The merge gate is the `required` check, not a button press.
-- **Require status checks**: exactly one — `required`. See section 3.
+- **Require status checks**: exactly one, `required`. See section 3.
 - **Require linear history.** No merge commits.
 - **Block force pushes and deletions.**
 - **Require signed commits** if Jay's local signing is configured; `gh-verify` reports rather than
@@ -41,20 +41,20 @@ design working.
 ## 3. CI workflow (`.github/workflows/ci.yml`)
 
 One workflow, parallel jobs, one aggregator. Every job runs a `just` command that a developer can
-run locally by the same name — CI never has a secret extra step.
+run locally by the same name. CI never has a secret extra step.
 
 | Job | Runs | Needs |
 |---|---|---|
-| `lint` | `just fmt-check`, `just lint` | — |
-| `deps` | dependency-boundary check: `lmsr` and `protocol` stay zero-IO (`CLAUDE.md` §3) | — |
-| `no-skips` | `scripts/check-no-skipped-tests.sh` — fails on any ignored/skipped/`only` test | — |
-| `rust` | `just test-rust` | — |
-| `db` | `just test-db` against a Postgres service container | — |
-| `sol` | `just test-sol` (`ci` profile), `just snapshot --check` | — |
-| `ts` | `just test-ts` | — |
-| `gitleaks` | full-history secret scan | — |
+| `lint` | `just fmt-check`, `just lint` | none |
+| `deps` | dependency-boundary check: `lmsr` and `protocol` stay zero-IO (`CLAUDE.md` §3) | none |
+| `no-skips` | `scripts/check-no-skipped-tests.sh`: fails on any ignored/skipped/`only` test | none |
+| `rust` | `just test-rust` | none |
+| `db` | `just test-db` against a Postgres service container | none |
+| `sol` | `just test-sol` (`ci` profile), `just snapshot --check` | none |
+| `ts` | `just test-ts` | none |
+| `gitleaks` | full-history secret scan | none |
 | `gate` | `just gate $(cat .phase)` | all of the above |
-| **`required`** | nothing — asserts every needed job succeeded | all of the above |
+| **`required`** | nothing; asserts every needed job succeeded | all of the above |
 
 **`required` is the only check named in the ruleset.** Jobs are added and renamed over the phases;
 the ruleset never has to change, and a job that is skipped or cancelled fails `required` rather than
@@ -70,7 +70,7 @@ required:
 ```
 
 Concurrency: one run per branch, older runs cancelled. `nightly-deep.yml` runs `just deep` and
-`just mutants` on a schedule, and may fail without blocking merges — it opens an issue instead.
+`just mutants` on a schedule, and may fail without blocking merges; a failure is reported as an issue.
 
 ## 4. Labels
 
@@ -94,14 +94,14 @@ when its milestone has zero open issues and Jay has approved the gate log.
 
 ## 6. Issue and PR templates
 
-- `.github/ISSUE_TEMPLATE/phase-tracking.yml` — goal, risk retired, slice checklist, gate log, exit
+- `.github/ISSUE_TEMPLATE/phase-tracking.yml`: goal, risk retired, slice checklist, gate log, exit
   criteria.
-- `.github/ISSUE_TEMPLATE/slice.yml` — **acceptance criteria must be written as test names.** The
+- `.github/ISSUE_TEMPLATE/slice.yml`: **acceptance criteria must be written as test names.** The
   template refuses vague criteria in review: "handles bad input" is not a test name;
   `rejects_voucher_above_escrow_headroom` is.
-- `.github/ISSUE_TEMPLATE/needs-jay.yml` — the question, the options considered, Claude's
+- `.github/ISSUE_TEMPLATE/needs-jay.yml`: the question, the options considered, Claude's
   recommendation, and what is blocked until it is answered.
-- `.github/PULL_REQUEST_TEMPLATE.md` — closes-issue link, the red-then-green evidence, the
+- `.github/PULL_REQUEST_TEMPLATE.md`: closes-issue link, the red-then-green evidence, the
   definition-of-done checklist from `CLAUDE.md` §8, and invariant IDs touched.
 
 ## 7. The per-slice command sequence
@@ -111,7 +111,7 @@ when its milestone has zero open issues and Jay has approved the gate log.
 gh issue develop <issue#> --checkout --name "<phase>/<issue#>-<slug>"
 
 # 2. Red: the failing test, committed alone
-git commit -am "test(<area>): <behaviour> — red for #<issue#>"
+git commit -am "test(<area>): <behaviour> (red for #<issue#>)"
 git push -u origin HEAD
 gh pr create --draft --fill --title "<area>: <behaviour>" \
   --body "Closes #<issue#>" --milestone "Phase <n>: <name>"
@@ -169,7 +169,7 @@ It exits non-zero on the first mismatch, printing the expected and actual value:
 5. Every label in `.github/labels.json` exists with the right colour and description.
 6. Milestones exist for phases 0 through `.phase`.
 7. Secret scanning and push protection are enabled.
-8. `.github/workflows/ci.yml` defines a `required` job needing every other job in the file — so a
+8. `.github/workflows/ci.yml` defines a `required` job needing every other job in the file, so a
    newly added job cannot be forgotten in the aggregator.
 
 Run it after any GitHub settings change, and before closing a phase. Settings drift silently;

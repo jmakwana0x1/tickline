@@ -27,7 +27,7 @@ market = { path = "crates/market" }
 indexer = { path = "crates/indexer" }
 settlement = { path = "crates/settlement" }
 
-# errors — used everywhere, including the zero-IO crates
+# errors: used everywhere, including the zero-IO crates
 thiserror = "2.0"
 
 # IO layers only. lmsr and protocol must not reach for these

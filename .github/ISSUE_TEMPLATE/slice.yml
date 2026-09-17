@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        A slice is one branch, one PR, one merge. If the work grows, open another slice —
+        A slice is one branch, one PR, one merge. If the work grows, open another slice;
         do not widen the branch (CLAUDE.md section 2).
 
   - type: input
@@ -26,7 +26,7 @@ body:
   - type: textarea
     id: criteria
     attributes:
-      label: Acceptance criteria — as test names
+      label: Acceptance criteria, written as test names
       description: >
         Each line is a test that will exist and pass. "Handles bad input" is not a test name;
         `rejects_voucher_above_escrow_headroom` is. A reviewer should be able to `grep` for

@@ -3,7 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.." || exit 1
 check="$PWD/scripts/check-no-em-dash.sh"
-DASH=$'—'
+# U+2014 built from its UTF-8 bytes, so this file never contains the character it bans.
+DASH="$(printf '\342\200\224')"
 failures=0
 
 scratch() { # creates a repo with one clean commit, prints its path
