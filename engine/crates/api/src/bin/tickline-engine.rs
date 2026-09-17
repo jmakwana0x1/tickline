@@ -21,7 +21,9 @@ async fn main() -> anyhow::Result<()> {
         .parse()?;
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    tracing::info!(%addr, "tickline engine listening");
+    // Log the bound address, not the requested one: with port 0 only the listener knows it.
+    let bound = listener.local_addr()?;
+    tracing::info!(addr = %bound, "tickline engine listening");
 
     axum::serve(listener, api::router())
         .with_graceful_shutdown(shutdown())
