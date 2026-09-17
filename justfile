@@ -73,6 +73,7 @@ lint:
 
 # Assert lmsr and protocol stay zero-IO (CLAUDE.md section 3).
 deps-check:
+    @bash scripts/test-check-crate-boundaries.sh
     @bash scripts/check-crate-boundaries.sh
 
 # ---------------------------------------------------------------- tests
