@@ -11,4 +11,4 @@ result differs from what is in git.
 Both use **fixed private keys**. That is the point of a vector file, and it is why this
 directory is allowlisted in `.gitleaks.toml`. No key here is ever funded on any real chain.
 
-Neither file exists yet: `lmsr.json` arrives in Phase 1, `eip712.json` in Phase 2.
+`lmsr.json` exists since Phase 1 (5,163 cases); `eip712.json` arrives in Phase 2.
