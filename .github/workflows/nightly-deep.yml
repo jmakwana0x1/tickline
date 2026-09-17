@@ -11,10 +11,27 @@ jobs:
   deep:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    # `just deep` runs with --all-features, which includes the `db-tests` suites, so the job needs
+    # the same Postgres the `db` and `gate` jobs in ci.yml get (issue #14).
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: tickline
+          POSTGRES_PASSWORD: tickline
+          POSTGRES_DB: tickline
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U tickline" --health-interval 2s
+          --health-timeout 3s --health-retries 30
+    env:
+      DATABASE_URL: postgres://tickline:tickline@localhost:5433/tickline
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
       - uses: ./.github/actions/setup
+        with: { sqlx: 'true' }
+      - run: just migrate
       - run: just deep
 
   mutants:
@@ -34,14 +51,29 @@ jobs:
     permissions: { issues: write }
     steps:
       - uses: actions/checkout@v4
-      - name: open an issue with the counterexample
+      # One open issue per failure streak, not one per night. A failure is not labeled
+      # `invariant` automatically: most nightly failures so far were tooling, not counterexamples,
+      # and the label should mean something when it appears.
+      - name: open or update the nightly-deep issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DEEP: ${{ needs.deep.result }}
+          MUTANTS: ${{ needs.mutants.result }}
         run: |
-          gh issue create \
-            --title "nightly-deep failed on $(date -u +%F)" \
-            --label bug,invariant,needs-jay \
-            --body "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          summary="deep: ${DEEP}, mutants: ${MUTANTS}"
+          existing="$(gh issue list --state open --search 'in:title "nightly-deep failed"' --json number -q '.[0].number')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Failed again on $(date -u +%F) (${summary}). Run: ${RUN_URL}"
+          else
+            gh issue create \
+              --title "nightly-deep failed on $(date -u +%F)" \
+              --label bug,needs-jay \
+              --body "Run: ${RUN_URL}
+
+          ${summary}
 
           Per CLAUDE.md section 2: any counterexample becomes a permanent unit test before
-          the current phase closes. Do not re-run to see if it passes."
+          the current phase closes. Do not re-run to see if it passes. If the failure is an
+          invariant counterexample, add the \`invariant\` label."
+          fi
