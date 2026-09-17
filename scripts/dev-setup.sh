@@ -11,8 +11,11 @@ have cargo || { say "rust"; curl --proto '=https' --tlsv1.2 -sSf https://sh.rust
 
 have just   || { say "just";   cargo install just; }
 have sqlx   || { say "sqlx-cli"; cargo install sqlx-cli --no-default-features --features rustls,postgres; }
-have cargo-mutants  || { say "cargo-mutants";  cargo install cargo-mutants; }
-have cargo-llvm-cov || { say "cargo-llvm-cov"; cargo install cargo-llvm-cov; rustup component add llvm-tools-preview; }
+# shellcheck source=scripts/tool-versions.sh
+. scripts/tool-versions.sh
+have cargo-mutants  || { say "cargo-mutants $CARGO_MUTANTS_VERSION";  cargo install cargo-mutants --version "$CARGO_MUTANTS_VERSION" --locked; }
+have cargo-llvm-cov || { say "cargo-llvm-cov $CARGO_LLVM_COV_VERSION"; cargo install cargo-llvm-cov --version "$CARGO_LLVM_COV_VERSION" --locked; rustup component add llvm-tools-preview; }
+have uv || { say "uv $UV_VERSION"; curl -LsSf "https://astral.sh/uv/$UV_VERSION/install.sh" | sh; }
 
 # Same tag CI installs (see .github/actions/setup). Upgrades are their own PR.
 have forge || { say "foundry v1.8.1"; curl -L https://foundry.paradigm.xyz | bash; "$HOME/.foundry/bin/foundryup" --install v1.8.1; }

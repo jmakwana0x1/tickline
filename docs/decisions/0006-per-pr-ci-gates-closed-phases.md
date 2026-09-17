@@ -1,6 +1,6 @@
 # ADR-0006: Per-PR CI gates closed phases; the in-progress gate runs at close
 
-- **Status:** proposed (awaiting Jay on #27)
+- **Status:** accepted (Jay, on #28)
 - **Date:** 2026-09-17
 - **Phase:** 1
 - **Invariants touched:** none directly; this decides when each phase's checks block a merge
@@ -31,7 +31,9 @@ later Phase 1 slice would stay red until the phase was complete. The per-slice l
 - `just gate-closed` runs `just gate <.phase - 1>`, or gate 0 while `.phase` is 0. Per-PR CI's
   `gate` job runs it. A developer can run the same command by the same name.
 - `.github/workflows/phase-gate.yml` runs `just gate $(cat .phase)` on demand, with the extra
-  tools later gates need (`cargo-mutants`, `cargo-llvm-cov`, the mpmath oracle's requirements).
+  tools later gates need: `cargo-mutants`, `cargo-llvm-cov` and `uv`, at the versions pinned in
+  `scripts/tool-versions.sh`. The oracle runs through `uv` there exactly as it does locally, and
+  the workflow only ever calls `just`.
   Its log is the gate log posted at phase close.
 - The in-progress phase's own tests still run on every PR through the `rust`, `db`, `sol` and
   `ts` jobs. Only the close-time extras (vector diffs, mutation, coverage thresholds) wait.

@@ -117,7 +117,7 @@ mutants *crates:
 
 # Regenerate cross-stack vectors. Must leave an empty git diff.
 vectors:
-    python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
+    uv run --no-project --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
     pnpm --filter @tickline/agents run vectors
     @git diff --exit-code testdata/vectors || { echo "vectors drifted; commit or fix the generator"; exit 1; }
 

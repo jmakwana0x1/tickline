@@ -11,10 +11,21 @@ inputs:
   sqlx:
     description: Install sqlx-cli
     default: 'false'
+  uv:
+    description: Install uv, which runs the Python reference oracle
+    default: 'false'
+  gate-tools:
+    description: Install cargo-mutants and cargo-llvm-cov, which gates 1 and later use
+    default: 'false'
 
 runs:
   using: composite
   steps:
+    - name: read pinned tool versions
+      id: versions
+      shell: bash
+      run: grep -E '^export [A-Z_]+=' "$GITHUB_WORKSPACE/scripts/tool-versions.sh" | sed 's/^export //' >> "$GITHUB_OUTPUT"
+
     - name: rust (pinned by rust-toolchain.toml)
       shell: bash
       run: rustup show
@@ -70,6 +81,19 @@ runs:
         tar -xzf "$archive" -C "$dest"
         echo "$dest" >> "$GITHUB_PATH"
         "$dest/forge" --version
+
+    # Pinned by commit (v10.1.0) and by uv version.
+    - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+      if: inputs.uv == 'true'
+      with:
+        version: ${{ steps.versions.outputs.UV_VERSION }}
+
+    - name: gate tools (pinned in scripts/tool-versions.sh)
+      if: inputs.gate-tools == 'true'
+      shell: bash
+      run: |
+        cargo install cargo-mutants --version "${{ steps.versions.outputs.CARGO_MUTANTS_VERSION }}" --locked
+        cargo install cargo-llvm-cov --version "${{ steps.versions.outputs.CARGO_LLVM_COV_VERSION }}" --locked
 
     - name: sqlx-cli
       if: inputs.sqlx == 'true'
