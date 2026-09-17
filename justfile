@@ -69,6 +69,7 @@ lint:
     @bash scripts/shellcheck.sh
     @bash scripts/test-no-stray-files.sh
     @bash scripts/test-check-coverage.sh
+    @bash scripts/test-check-vectors-committed.sh
 
 # Assert lmsr and protocol stay zero-IO (CLAUDE.md section 3).
 deps-check:
@@ -116,11 +117,18 @@ deep:
 mutants *crates:
     cd {{engine}} && cargo mutants --no-shuffle {{ if crates == "" { "" } else { "-p " + replace(crates, " ", " -p ") } }}
 
-# Regenerate cross-stack vectors. Must leave an empty git diff.
-vectors:
+# Regenerate every cross-stack vector file. Must leave an empty git diff.
+vectors: vectors-lmsr vectors-eip712
+
+# Phase 1: the mpmath LMSR oracle (run through uv, pinned in scripts/tool-versions.sh).
+vectors-lmsr:
     uv run --no-project --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
+    @bash scripts/check-vectors-committed.sh testdata/vectors/lmsr.json
+
+# Phase 2: the EIP-712 vectors, generated with viem and the official x402 SDK.
+vectors-eip712:
     pnpm --filter @tickline/agents run vectors
-    @git diff --exit-code testdata/vectors || { echo "vectors drifted; commit or fix the generator"; exit 1; }
+    @bash scripts/check-vectors-committed.sh testdata/vectors/eip712.json
 
 slither:
     cd {{contracts}} && slither . --config-file slither.config.json
