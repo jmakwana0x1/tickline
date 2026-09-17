@@ -29,6 +29,8 @@ settlement = { path = "crates/settlement" }
 
 # errors: used everywhere, including the zero-IO crates
 thiserror = "2.0"
+# 256-bit integers for lmsr's Solady port (ADR-0008). Exact pin, no default features.
+alloy-primitives = { version = "=1.7.3", default-features = false }
 
 # IO layers only. lmsr and protocol must not reach for these
 # (enforced by scripts/check-crate-boundaries.sh).

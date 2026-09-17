@@ -9,6 +9,7 @@ publish.workspace = true
 
 # No IO dependencies, ever. scripts/check-crate-boundaries.sh enforces this.
 [dependencies]
+alloy-primitives.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
