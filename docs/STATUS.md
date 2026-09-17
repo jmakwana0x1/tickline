@@ -3,15 +3,20 @@
 The state of the build. **Task state lives in GitHub issues, not here.** This file records
 gates, pins, open questions, and benchmarks.
 
-Last updated: 2026-09-15
+Last updated: 2026-09-17
 
 ---
 
 ## Current phase
 
-**Phase 0: Spec capture and scaffold.** `.phase` = `0`.
+**Phase 0 is closed.** Gate 0 passed on `main` at `44dc50d` on 2026-09-17, release `phase-0` is
+cut, and the Phase 0 milestone is closed. Jay gave the go-ahead on #1.
 
-Risk being retired: building against a misread x402 spec.
+**`.phase` is still `0`.** Bumping it to 1 would make CI run gate 1, which cannot pass until Phase 1
+is finished, so every PR would be red. The fix (per-PR CI gates closed phases; ADR-0006) is #28,
+waiting on Jay. The bump follows as its own one-line PR. Phase 1 is next.
+
+Phase 0 retired this risk: building against a misread x402 spec.
 
 | Deliverable | State |
 |---|---|
@@ -21,11 +26,12 @@ Risk being retired: building against a misread x402 spec.
 | `docker-compose.yml`, anvil via `just up` | written |
 | Foundry profiles `default` / `ci` / `deep`, `PROPTEST_CASES` | written |
 | CI workflow with the `required` aggregator | written |
-| Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
+| Smoke test per stack | ✅ Rust 9 · Solidity 2 · TypeScript 9 · Postgres 1 (CI only; no Docker on the dev box) |
 | `docs/spec-notes.md` | ✅ researched, cited, and every question answered by Jay |
 | GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
 | Guard proofs | ✅ 4 of 4, see below |
-| Release `phase-0` | not cut |
+| Self-tested checks | ✅ `gate.sh` (37 planted failures), em-dash (7 cases), stray file names (5 cases) |
+| Release `phase-0` | ✅ cut at `44dc50d` |
 
 ---
 
@@ -59,6 +65,7 @@ tracking issue.
 | Date | Phase | Commit | Rust | Solidity | TS | DB | Notes |
 |---|---|---|---|---|---|---|---|
 | 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0`, in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
+| 2026-09-17 | 0 | `44dc50d` | 9 | 2 | 9 | 1 | **Phase 0 close.** CI run 35186404431, all 10 jobs green; `just gh-verify` also green locally with an admin token. Log on #1. |
 
 ### Guard evidence (Phase 0 exit)
 
