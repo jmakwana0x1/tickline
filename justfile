@@ -122,7 +122,7 @@ vectors: vectors-lmsr vectors-eip712
 
 # Phase 1: the mpmath LMSR oracle (run through uv, pinned in scripts/tool-versions.sh).
 vectors-lmsr:
-    uv run --no-project --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
+    uv run --no-project --python 3.12 --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
     @bash scripts/check-vectors-committed.sh testdata/vectors/lmsr.json
 
 # Phase 2: the EIP-712 vectors, generated with viem and the official x402 SDK.
