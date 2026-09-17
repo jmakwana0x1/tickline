@@ -22,7 +22,7 @@ Risk being retired: building against a misread x402 spec.
 | Foundry profiles `default` / `ci` / `deep`, `PROPTEST_CASES` | written |
 | CI workflow with the `required` aggregator | written |
 | Smoke test per stack | Rust ✅ 8 · Solidity ✅ 2 · TypeScript ✅ 9 · sqlx ⚠️ unrun (no Docker locally) |
-| `docs/spec-notes.md` | ✅ researched and cited — **9 open questions await Jay (§8)** |
+| `docs/spec-notes.md` | ✅ researched, cited, and every question answered by Jay |
 | GitHub bootstrap (`just gh-bootstrap`, `just gh-verify`) | ✅ both green |
 | Guard proofs | ✅ 4 of 4 — see below |
 | Release `phase-0` | not cut |
@@ -93,17 +93,30 @@ Not a code problem, but it shapes what can be proven on this machine:
 
 ## Open questions
 
-Each is a `needs-jay` issue. Claude does not proceed past one by guessing.
+None open. Every question raised in Phase 0 was answered by Jay on 2026-09-17. They stay listed
+so the reasoning is findable.
 
-| # | Question | Blocks | Issue |
+| # | Question | Answer | Where |
 |---|---|---|---|
-| — | **`docs/spec-notes.md` §8 now carries 9 numbered questions (Q1–Q9) from the research.** The most important is **Q1**: `parsePriceFeedUpdatesUnique` does not give the guarantee `PHASES.md` assumed, which makes resolution manipulable unless the window is chosen deliberately. | Phases 2–5 | _to open_ |
-| Qa | Fee model: `PHASES.md` §4 says "fee math" and a "small read fee" but never fixes the rates or who sets them. Per-market or protocol-wide? | Phase 4 | _to open_ |
-| Qb | Missed-commit refund path (`PHASES.md` §3) is flagged "write ADR before implementing". | Phase 3 | _to open_ |
-| Qc | ~~Foundry pinning~~ | — | answered 2026-09-15: pinned to the `v1.8.1` release tag with a published sha256, see #11 |
-| Q6 | The `main` ruleset now requires 0 approving reviews (ADR-0003), so a PR can merge without a human reading it. Revisit if a second reviewer account or review bot is ever added. | — | answered 2026-09-15 |
+| Q1 to Q9 | The x402 and Pyth research questions | Recorded in `docs/spec-notes.md` §8 | #6, #7, #8, #9 |
+| Qa | Fee model | Fixed per market at creation and stored in market params. Fill fee is **100 bps of cost**. A price read costs **1,000 base units (0.001 USDC)**. Receipts carry `feesPaid`. | #1 |
+| Qb | Missed commit | The market becomes `Failed`; receipts reclaim `costPaid + feesPaid` **from the operator bond**. This differs from a void (ADR-0005), which refunds from collateral because nobody is at fault. **An ADR is required before any Phase 3 code.** | #1 |
+| Qc | Foundry pin | Release tag `v1.8.1`. CI installs it by direct download with a verified sha256 (#12), which replaced the `foundry-toolchain` action; `scripts/dev-setup.sh` installs the same tag. Upgrades are their own PR. | #1, #11 |
+| (ruleset) | 0 required approvals means a PR can merge unread | Accepted in ADR-0003. Claude self-merges once `required` is green, except `needs-jay` PRs and stop-and-ask triggers. Revisit if a second reviewer is added. | ADR-0003 |
 
 ---
+
+## Deliberate divergences from PHASES.md
+
+Recorded here so a reader who trusts `PHASES.md` is not surprised. Each has an ADR.
+
+| `PHASES.md` says | We do | Why | ADR |
+|---|---|---|---|
+| `resolve` is "permissionless after deadline + final grace" | permissionless from the deadline, no grace | the grace guarded a timing race that Pyth's uniqueness check proves cannot happen | ADR-0005 |
+| Phase 3 integrates "the spec's reference batch-settlement escrow (vendored if needed, pinned by commit)" | integrate against the deployed canonical address; no vendoring | it is already deployed at a CREATE2 address on every supported chain and audited three times | `docs/spec-notes.md` §4 |
+| `PositionReceipt` fields `yesShares`, `noShares`, `costPaid`, `feesPaid` are `uint256` | all four are `uint128` | they then match x402's `maxClaimableAmount` and `totalClaimed`, so no width conversion happens at the escrow boundary | `docs/spec-notes.md` §8 Q5 |
+| Phase 0 gate includes `just doctor` | it does not | `doctor` inventories the developer's machine; CI runners differ by design | ADR-0004 |
+| ruleset requires 1 approving review | 0 required approvals | a solo repo deadlocks: GitHub forbids self-approval and there are no bypass actors | ADR-0003 |
 
 ## Benchmarks
 
