@@ -56,6 +56,7 @@ Phase 0 retired this risk: building against a misread x402 spec. Its deliverable
 | uv | 0.12.15 | `scripts/tool-versions.sh`; CI installs it with `astral-sh/setup-uv` at `bec219d` (v10.1.0) |
 | cargo-mutants | 27.1.0 | `scripts/tool-versions.sh` |
 | cargo-llvm-cov | 0.9.1 | `scripts/tool-versions.sh` |
+| alloy-primitives | =1.7.3, `default-features = false` | ADR-0008; added to `lmsr` in S3 (#40) |
 | `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4, verified live on Base Sepolia |
 | x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
 | x402 escrow reference | not yet vendored | Phase 3, pinned by commit |

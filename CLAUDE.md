@@ -99,7 +99,7 @@ tickline/
 │   ├── Cargo.toml                Workspace root, shared lints and deps.
 │   ├── migrations/               sqlx migrations, applied by `just migrate`.
 │   └── crates/
-│       ├── lmsr/                 Phase 1. Fixed-point LMSR. Zero IO, zero deps.
+│       ├── lmsr/                 Phase 1. Fixed-point LMSR. Zero IO.
 │       ├── protocol/             Phase 2. Voucher + receipt types, EIP-712, x402 envelopes.
 │       ├── ledger/               Phase 4. Append-only double-entry ledger over Postgres.
 │       ├── market/               Phase 4. Market actor: LMSR state, fills, epochs.
@@ -137,6 +137,7 @@ tickline/
 **Layout rules.**
 - A crate may depend only on crates to its left in the list above. `lmsr` depends on nothing in the
   workspace; `protocol` may not depend on `ledger`. Cycles are a build error and a design error.
+- `lmsr` is zero IO. `lmsr` dependencies are limited to `alloy-primitives` (no default features) and `thiserror` (ADR-0008), enforced as an allowlist by `scripts/check-crate-boundaries.sh`.
 - `lmsr` and `protocol` are **zero-IO**: no `tokio`, no `sqlx`, no `reqwest`, no clock, no `std::time`.
   This is what makes them exhaustively testable, and it is enforced in CI by a dependency check.
 - Anything generated lives under `testdata/` and is committed. Generators are deterministic; `just
