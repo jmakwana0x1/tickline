@@ -116,7 +116,7 @@ deep:
 
 # Mutation testing. Pass crates: `just mutants lmsr protocol`.
 mutants *crates:
-    cd {{engine}} && cargo mutants --no-shuffle {{ if crates == "" { "" } else { "-p " + replace(crates, " ", " -p ") } }}
+    cd {{engine}} && TICKLINE_VECTORS_DIR={{justfile_directory()}}/testdata/vectors cargo mutants --no-shuffle {{ if crates == "" { "" } else { "-p " + replace(crates, " ", " -p ") } }}
 
 # Regenerate every cross-stack vector file. Must leave an empty git diff.
 vectors: vectors-lmsr vectors-eip712
