@@ -1,22 +1,64 @@
 [
-  { "name": "phase-0", "color": "0e8a16", "description": "Spec capture and scaffold" },
-  { "name": "phase-1", "color": "0e8a16", "description": "LMSR math core" },
-  { "name": "phase-2", "color": "0e8a16", "description": "Protocol types and cross-stack vectors" },
-  { "name": "phase-3", "color": "0e8a16", "description": "Contracts" },
-  { "name": "phase-4", "color": "0e8a16", "description": "Engine core" },
-  { "name": "phase-5", "color": "0e8a16", "description": "Settlement and indexer" },
-  { "name": "phase-6", "color": "0e8a16", "description": "Agents and end-to-end" },
-  { "name": "phase-7", "color": "0e8a16", "description": "Hardening" },
-  { "name": "phase-8", "color": "0e8a16", "description": "Testnet, dashboard, demo" },
-  { "name": "phase-9", "color": "0e8a16", "description": "Stretch: TWAP template" },
-
+  {
+    "name": "phase-0",
+    "color": "0e8a16",
+    "description": "Spec capture and scaffold"
+  },
+  {
+    "name": "phase-1",
+    "color": "0e8a16",
+    "description": "LMSR math core"
+  },
+  {
+    "name": "phase-2",
+    "color": "0e8a16",
+    "description": "Protocol types and cross-stack vectors"
+  },
+  {
+    "name": "phase-3",
+    "color": "0e8a16",
+    "description": "Contracts"
+  },
+  {
+    "name": "phase-4",
+    "color": "0e8a16",
+    "description": "Engine core"
+  },
+  {
+    "name": "phase-5",
+    "color": "0e8a16",
+    "description": "Settlement and indexer"
+  },
+  {
+    "name": "phase-6",
+    "color": "0e8a16",
+    "description": "Agents and end-to-end"
+  },
+  {
+    "name": "phase-7",
+    "color": "0e8a16",
+    "description": "Hardening"
+  },
+  {
+    "name": "phase-8",
+    "color": "0e8a16",
+    "description": "Testnet, dashboard, demo"
+  },
+  {
+    "name": "phase-9",
+    "color": "0e8a16",
+    "description": "Stretch: TWAP template"
+  },
   {
     "name": "tracking",
     "color": "1d76db",
     "description": "Phase tracking issue. One per milestone"
   },
-  { "name": "slice", "color": "c5def5", "description": "One unit of work, closed by a single PR" },
-
+  {
+    "name": "slice",
+    "color": "c5def5",
+    "description": "One unit of work, closed by a single PR"
+  },
   {
     "name": "needs-jay",
     "color": "d93f0b",
@@ -27,19 +69,44 @@
     "color": "b60205",
     "description": "Touches an invariant in CLAUDE.md section 4"
   },
-  { "name": "adr", "color": "5319e7", "description": "Needs an ADR before any code" },
+  {
+    "name": "adr",
+    "color": "5319e7",
+    "description": "Needs an ADR before any code"
+  },
   {
     "name": "red",
     "color": "e99695",
     "description": "Deliberately failing, proving a guard works. Never merged"
   },
-
-  { "name": "security", "color": "b60205", "description": "Funds, keys, or trust boundaries" },
+  {
+    "name": "security",
+    "color": "b60205",
+    "description": "Funds, keys, or trust boundaries"
+  },
   {
     "name": "bug",
     "color": "d73a4a",
     "description": "Something is wrong, including any flaky test"
   },
-  { "name": "chore", "color": "ededed", "description": "Tooling, CI, housekeeping" },
-  { "name": "docs", "color": "0075ca", "description": "Documentation only" }
+  {
+    "name": "chore",
+    "color": "ededed",
+    "description": "Tooling, CI, housekeeping"
+  },
+  {
+    "name": "docs",
+    "color": "0075ca",
+    "description": "Documentation only"
+  },
+  {
+    "name": "area:ci",
+    "color": "bfdadc",
+    "description": "CI workflows, gates and repository automation"
+  },
+  {
+    "name": "p1",
+    "color": "fbca04",
+    "description": "Priority 1: do next"
+  }
 ]
