@@ -39,9 +39,9 @@ jobs:
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
+      # cargo-mutants at the version pinned in scripts/tool-versions.sh, as in phase-gate.yml.
       - uses: ./.github/actions/setup
-        with: { node: 'false', foundry: 'false' }
-      - run: cargo install cargo-mutants --locked
+        with: { node: 'false', foundry: 'false', gate-tools: 'true' }
       - run: just mutants
 
   report:
