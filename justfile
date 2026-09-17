@@ -68,6 +68,7 @@ lint:
     @bash scripts/check-no-em-dash.sh
     @bash scripts/shellcheck.sh
     @bash scripts/test-no-stray-files.sh
+    @bash scripts/test-check-coverage.sh
 
 # Assert lmsr and protocol stay zero-IO (CLAUDE.md section 3).
 deps-check:
