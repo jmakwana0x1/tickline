@@ -117,7 +117,7 @@ mutants *crates:
 
 # Regenerate cross-stack vectors. Must leave an empty git diff.
 vectors:
-    python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
+    uv run --no-project --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json
     pnpm --filter @tickline/agents run vectors
     @git diff --exit-code testdata/vectors || { echo "vectors drifted; commit or fix the generator"; exit 1; }
 
@@ -136,6 +136,11 @@ test-gate:
 # Run phase n's gate and every earlier phase's gate. The only definition of done.
 gate n:
     @bash scripts/gate.sh {{n}}
+
+# Gate every closed phase: what per-PR CI runs (ADR-0006). Phase 0 is gated while in progress,
+# because its gate has no unbuilt steps.
+gate-closed:
+    @phase="$(cat .phase)"; bash scripts/gate.sh "$(( phase > 0 ? phase - 1 : 0 ))"
 
 # ---------------------------------------------------------------- github
 

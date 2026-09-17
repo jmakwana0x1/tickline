@@ -105,8 +105,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Gates every closed phase, so a regression in finished work blocks every PR. The phase in
+  # progress has steps that cannot pass until it is done; its gate runs in phase-gate.yml at
+  # close (ADR-0006).
   gate:
-    name: just gate (current phase)
+    name: just gate-closed
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -128,7 +131,7 @@ jobs:
       - uses: ./.github/actions/setup
         with: { sqlx: 'true' }
       - run: just migrate
-      - run: just gate "$(cat .phase)"
+      - run: just gate-closed
 
   # The one check named in the branch ruleset. Jobs come and go over the phases;
   # this aggregator means the ruleset never has to change, and a skipped or cancelled
