@@ -62,6 +62,22 @@ pub enum LmsrError {
     /// A buy must be for a strictly positive number of shares.
     #[error("quantity to buy must be strictly positive, got {0}")]
     QuantityNotPositive(i128),
+    /// A buy would take a legal quantity past [`market::Q_MAX`].
+    ///
+    /// Distinct from [`LmsrError::QuantityAboveMax`], which means the state passed in was already
+    /// invalid. A caller can act on these differently: this one carries the headroom, so Phase 4's
+    /// API can answer with the largest buy that would have been accepted.
+    #[error("buying {requested} would take the quantity to {resulting}, above the maximum {max}")]
+    BuyAboveQuantityMax {
+        /// The quantity before the buy, which is itself legal.
+        existing: i128,
+        /// The number of shares asked for.
+        requested: i128,
+        /// What the quantity would have become.
+        resulting: i128,
+        /// The cap that would have been passed.
+        max: i128,
+    },
     /// A value converted to base units was negative. Money and shares never are.
     #[error("amount must not be negative, got {0}")]
     AmountNegative(I256),

@@ -41,8 +41,9 @@ pub enum Outcome {
 ///
 /// # Errors
 ///
-/// [`LmsrError::QuantityNotPositive`] when `d <= 0`; [`LmsrError::QuantityAboveMax`] when the
-/// resulting quantity would pass `Q_MAX`; plus every domain error [`cost`] returns.
+/// [`LmsrError::QuantityNotPositive`] when `d <= 0`; [`LmsrError::BuyAboveQuantityMax`] when a
+/// legal quantity plus `d` would pass `Q_MAX`; plus every domain error [`cost`] returns, including
+/// [`LmsrError::QuantityAboveMax`] when the state handed in is itself invalid.
 pub fn cost_to_buy(
     q_yes: i128,
     q_no: i128,
@@ -62,8 +63,14 @@ pub fn cost_to_buy(
         .checked_add(d)
         .ok_or(LmsrError::ArithmeticOverflow("buy"))?;
     if after_bought > Q_MAX {
-        // The resulting quantity is the offending value: the starting one may be perfectly legal.
-        return Err(LmsrError::QuantityAboveMax(after_bought));
+        // A legal state plus a buy that passes the cap is its own error: the caller can act on
+        // the headroom, which a bare "quantity above max" does not give them.
+        return Err(LmsrError::BuyAboveQuantityMax {
+            existing: bought,
+            requested: d,
+            resulting: after_bought,
+            max: Q_MAX,
+        });
     }
     let after = match outcome {
         Outcome::Yes => cost(after_bought, q_no, b)?,
@@ -205,13 +212,32 @@ mod tests {
 
     #[test]
     fn buying_past_the_quantity_cap_is_rejected() {
+        // A legal state plus a buy that passes the cap: its own variant, carrying the headroom.
         assert_eq!(
             cost_to_buy(Q_MAX, 0, B_MIN, Outcome::Yes, 1),
-            Err(LmsrError::QuantityAboveMax(Q_MAX + 1)),
-            "the resulting quantity is the offending one"
+            Err(LmsrError::BuyAboveQuantityMax {
+                existing: Q_MAX,
+                requested: 1,
+                resulting: Q_MAX + 1,
+                max: Q_MAX,
+            })
         );
         assert_eq!(
             cost_to_buy(0, 0, B_MIN, Outcome::No, Q_MAX + 1),
+            Err(LmsrError::BuyAboveQuantityMax {
+                existing: 0,
+                requested: Q_MAX + 1,
+                resulting: Q_MAX + 1,
+                max: Q_MAX,
+            })
+        );
+    }
+
+    /// The other variant keeps its meaning: the state handed in was already invalid.
+    #[test]
+    fn buying_from_an_invalid_state_is_rejected_as_a_quantity_error() {
+        assert_eq!(
+            cost_to_buy(Q_MAX + 1, 0, B_MIN, Outcome::Yes, 1),
             Err(LmsrError::QuantityAboveMax(Q_MAX + 1))
         );
     }
