@@ -9,7 +9,8 @@ Last updated: 2026-09-17
 
 ## Current phase
 
-**Phase 1: LMSR math core.** `.phase` = `1`. Tracking issue #31.
+**Phase 1: LMSR math core.** `.phase` = `1`. Tracking issue #31. **Gate 1 is green**; the phase
+closes on Jay's go-ahead.
 
 Risk being retired: wrong prices, and insolvent rounding.
 
@@ -53,10 +54,10 @@ Phase 0 retired this risk: building against a misread x402 spec. Its deliverable
 | Foundry | **v1.8.1**, sha256 `37b45855…89c10` | `.github/actions/setup`, pinned and checksum-verified |
 | forge-std | v1.16.2 (`bf647bd`) | `contracts/lib/forge-std`, git submodule |
 | gitleaks | 8.21.2 | `.pre-commit-config.yaml` |
+| alloy-primitives | =1.7.3, no default features | `engine/Cargo.toml`; ADR-0008 |
 | uv | 0.12.15 | `scripts/tool-versions.sh`; CI installs it with `astral-sh/setup-uv` at `bec219d` (v10.1.0) |
 | cargo-mutants | 27.1.0 | `scripts/tool-versions.sh` |
 | cargo-llvm-cov | 0.9.1 | `scripts/tool-versions.sh` |
-| alloy-primitives | =1.7.3, `default-features = false` | ADR-0008; added to `lmsr` in S3 (#40) |
 | `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4, verified live on Base Sepolia |
 | x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
 | x402 escrow reference | not yet vendored | Phase 3, pinned by commit |
@@ -72,6 +73,7 @@ tracking issue.
 |---|---|---|---|---|---|---|---|
 | 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0`, in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
 | 2026-09-17 | 0 | `44dc50d` | 9 | 2 | 9 | 1 | **Phase 0 close.** CI run 35186404431, all 10 jobs green; `just gh-verify` also green locally with an admin token. Log on #1. |
+| 2026-09-19 | 1 | `9fd9d2c` | 80 | 2 | 9 | 1 | **Phase 1 gate green.** `phase-gate` run 35447353612, `just gate 1` (phases 0 and 1), 438s. `lmsr`: 66 mutants, 65 caught, 1 unviable, 0 missed; coverage 99.69% of 643 lines; vectors reproduce byte for byte. Log on #31. |
 
 ### Guard evidence (Phase 0 exit)
 
