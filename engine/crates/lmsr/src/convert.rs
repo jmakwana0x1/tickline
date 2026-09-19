@@ -18,7 +18,7 @@ use alloy_primitives::I256;
 
 use crate::{
     cost,
-    fixed::{add, div, int, mul, sub},
+    fixed::{add, div, int, sub},
     market::cost_error_bound,
     LmsrError, Q_MAX,
 };
