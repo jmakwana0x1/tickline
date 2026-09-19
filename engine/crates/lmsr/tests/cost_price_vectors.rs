@@ -30,7 +30,12 @@ fn exact_bounds(
         .get(inexact_key)
         .and_then(serde_json::Value::as_bool)
         .ok_or_else(|| format!("case is missing '{inexact_key}': {case}"))?;
-    Ok((floor, if inexact { floor + 1 } else { floor }))
+    let ceil = if inexact {
+        floor.checked_add(1).ok_or("ceil overflow")?
+    } else {
+        floor
+    };
+    Ok((floor, ceil))
 }
 
 fn field(case: &serde_json::Value, name: &str) -> TestResult<i128> {
@@ -42,14 +47,14 @@ fn field(case: &serde_json::Value, name: &str) -> TestResult<i128> {
 }
 
 /// Distance from a value to the exact interval `[lo, hi]`, in wei.
-fn distance(got: i128, (lo, hi): (i128, i128)) -> i128 {
-    if got < lo {
-        lo - got
+fn distance(got: i128, (lo, hi): (i128, i128)) -> TestResult<i128> {
+    Ok(if got < lo {
+        lo.checked_sub(got).ok_or("distance overflow")?
     } else if got > hi {
-        got - hi
+        got.checked_sub(hi).ok_or("distance overflow")?
     } else {
         0
-    }
+    })
 }
 
 #[test]
@@ -67,22 +72,25 @@ fn cost_matches_reference_vectors_within_derived_bound() -> TestResult {
             field(case, "b")?,
         );
         let got = cost(q_yes, q_no, b)?;
-        let error = distance(got, exact_bounds(case, "floor", "inexact")?);
+        let error = distance(got, exact_bounds(case, "floor", "inexact")?)?;
         let bound = cost_error_bound(b)?;
         assert!(
             error <= bound,
             "cost({q_yes}, {q_no}, {b}) is {error} wei from exact, above the derived bound {bound}"
         );
+        let doubled = error.checked_mul(2).ok_or("tightness overflow")?;
         assert!(
-            error * 2 <= bound,
+            doubled <= bound,
             "tightness: cost({q_yes}, {q_no}, {b}) is {error} wei from exact, over half the bound {bound}"
         );
-        if error * worst_ratio_den > worst_ratio_num * bound {
+        if error.checked_mul(worst_ratio_den).ok_or("ratio")?
+            > worst_ratio_num.checked_mul(bound).ok_or("ratio")?
+        {
             worst_ratio_num = error;
             worst_ratio_den = bound;
             worst = Some((q_yes, q_no, b, error, bound));
         }
-        checked += 1;
+        checked = checked.checked_add(1).ok_or("count")?;
     }
     assert!(checked >= 800, "only {checked} cost cases checked");
     println!("cost: {checked} cases, worst error/bound {worst:?}");
@@ -105,19 +113,23 @@ fn price_matches_reference_vectors_within_derived_bound() -> TestResult {
             ("yes", got.yes, "yes_floor", "yes_inexact"),
             ("no", got.no, "no_floor", "no_inexact"),
         ] {
-            let error = distance(value, exact_bounds(case, floor_key, inexact_key)?);
+            let error = distance(value, exact_bounds(case, floor_key, inexact_key)?)?;
             assert!(
                 error <= bound,
                 "{label} price({q_yes}, {q_no}, {b}) is {error} wei from exact, above the bound {bound}"
             );
             assert!(
-                error * 2 <= bound,
+                error.checked_mul(2).ok_or("tightness overflow")? <= bound,
                 "tightness: {label} price({q_yes}, {q_no}, {b}) is {error} wei from exact, over half the bound {bound}"
             );
             worst = worst.max(error);
         }
-        assert_eq!(got.yes + got.no, lmsr::WAD, "prices must sum to one WAD");
-        checked += 1;
+        assert_eq!(
+            got.yes.checked_add(got.no).ok_or("price sum overflow")?,
+            lmsr::WAD,
+            "prices must sum to one WAD"
+        );
+        checked = checked.checked_add(1).ok_or("count")?;
     }
     assert!(checked >= 600, "only {checked} price cases checked");
     println!("price: {checked} cases, worst error {worst} wei (bound {bound})");
@@ -146,12 +158,12 @@ fn cases_at(b_wanted: i128) -> TestResult<usize> {
         }
         let (q_yes, q_no) = (field(case, "q_yes")?, field(case, "q_no")?);
         let got = cost(q_yes, q_no, b_wanted)?;
-        let error = distance(got, exact_bounds(case, "floor", "inexact")?);
+        let error = distance(got, exact_bounds(case, "floor", "inexact")?)?;
         assert!(
-            error * 2 <= cost_error_bound(b_wanted)?,
+            error.checked_mul(2).ok_or("tightness overflow")? <= cost_error_bound(b_wanted)?,
             "cost({q_yes}, {q_no}, {b_wanted}) is {error} wei from exact"
         );
-        checked += 1;
+        checked = checked.checked_add(1).ok_or("count")?;
     }
     Ok(checked)
 }
@@ -179,7 +191,7 @@ fn cost_rejects_every_out_of_domain_case_in_the_vectors() -> TestResult {
         };
         assert_eq!(cost(q_yes, q_no, b), Err(expected), "{case}");
         assert_eq!(prices(q_yes, q_no, b), Err(expected), "{case}");
-        checked += 1;
+        checked = checked.checked_add(1).ok_or("count")?;
     }
     assert!(checked >= 8, "only {checked} domain-error cases checked");
     Ok(())

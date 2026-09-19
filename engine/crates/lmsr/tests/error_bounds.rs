@@ -29,11 +29,15 @@ fn distance(case: &serde_json::Value, got: I256) -> TestResult<I256> {
         .get("inexact")
         .and_then(serde_json::Value::as_bool)
         .ok_or("case is missing 'inexact'")?;
-    let ceil = if inexact { floor + I256::ONE } else { floor };
+    let ceil = if inexact {
+        floor.checked_add(I256::ONE).ok_or("ceil overflow")?
+    } else {
+        floor
+    };
     Ok(if got < floor {
-        floor - got
+        floor.checked_sub(got).ok_or("distance overflow")?
     } else if got > ceil {
-        got - ceil
+        got.checked_sub(ceil).ok_or("distance overflow")?
     } else {
         I256::ZERO
     })
@@ -94,7 +98,8 @@ fn ln_wad_leaf_bound_holds_on_the_range_the_cost_uses() -> TestResult {
             continue;
         }
         let x = parse(case, "x")?;
-        if x < wad || x > wad * I256::try_from(2)? {
+        let two_wad = wad.checked_mul(I256::try_from(2)?).ok_or("two wad")?;
+        if x < wad || x > two_wad {
             continue;
         }
         let error = distance(case, ln_wad(x)?)?;
