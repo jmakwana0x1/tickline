@@ -11,10 +11,15 @@
 
 #![forbid(unsafe_code)]
 
+pub mod convert;
 pub mod fixed;
 pub mod market;
 
 pub use alloy_primitives::I256;
+pub use convert::{
+    cost_to_base_units, cost_to_buy, cost_to_buy_base_units, round_cost_up, round_shares_down,
+    subsidy_base_units, Outcome, BASE_UNIT_SCALE,
+};
 pub use fixed::{exp_wad, ln_wad};
 pub use market::{cost, cost_error_bound, prices, Prices, B_MAX, B_MIN, PRICE_ERROR_BOUND, Q_MAX};
 
@@ -54,6 +59,15 @@ pub enum LmsrError {
     /// A quantity is above [`market::Q_MAX`].
     #[error("quantity is above the maximum, got {0}")]
     QuantityAboveMax(i128),
+    /// A buy must be for a strictly positive number of shares.
+    #[error("quantity to buy must be strictly positive, got {0}")]
+    QuantityNotPositive(i128),
+    /// A value converted to base units was negative. Money and shares never are.
+    #[error("amount must not be negative, got {0}")]
+    AmountNegative(I256),
+    /// A value converted to base units does not fit in `u128`.
+    #[error("amount {0} does not fit in u128 base units")]
+    AmountAboveU128(I256),
 }
 
 #[cfg(test)]

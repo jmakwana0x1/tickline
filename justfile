@@ -121,6 +121,11 @@ mutants *crates:
 # Regenerate every cross-stack vector file. Must leave an empty git diff.
 vectors: vectors-lmsr vectors-eip712
 
+# Regenerate the accuracy snapshot (ADR-0010). Commit the change and say why the number moved.
+update-error-baseline:
+    cd {{engine}} && UPDATE_ERROR_BASELINE=1 TICKLINE_VECTORS_DIR={{justfile_directory()}}/testdata/vectors cargo test -p lmsr --test error_baseline
+    @echo "baseline rewritten; review the diff before committing"
+
 # Phase 1: the mpmath LMSR oracle (run through uv, pinned in scripts/tool-versions.sh).
 vectors-lmsr:
     uv run --no-project --python 3.12 --with-requirements tools/reference/requirements.txt python3 tools/reference/lmsr_ref.py --out testdata/vectors/lmsr.json

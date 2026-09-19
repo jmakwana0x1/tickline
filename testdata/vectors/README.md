@@ -6,6 +6,7 @@ result differs from what is in git.
 | File | Generator | Proves |
 |---|---|---|
 | `lmsr.json` | `tools/reference/lmsr_ref.py` (mpmath, 60 digits) | Rust and Solidity LMSR math match an independent oracle to within 1 wei, rounding toward the vault |
+| `error-baseline.json` | `just update-error-baseline` | the worst error each `lmsr` function shows against `lmsr.json`, asserted exactly so a one-wei change fails (ADR-0010) |
 | `eip712.json` | `agents/src/vectors/generate.ts` (viem + the official SDK) | Rust, Solidity, and TypeScript produce byte-identical struct hashes, digests, recovered signers, and market IDs |
 
 Both use **fixed private keys**. That is the point of a vector file, and it is why this
