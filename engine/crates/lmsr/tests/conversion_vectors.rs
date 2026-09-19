@@ -109,7 +109,14 @@ fn cost_to_buy_rejects_every_out_of_domain_case_in_the_vectors() -> TestResult {
         );
         let expected = match error {
             "quantity_not_positive" => LmsrError::QuantityNotPositive(d),
-            "quantity_above_max" => LmsrError::QuantityAboveMax(q_yes.max(q_no).max(d)),
+            // The resulting quantity is what passed the cap, not the starting one.
+            "quantity_above_max" => {
+                let bought = match outcome(case)? {
+                    Outcome::Yes => q_yes,
+                    Outcome::No => q_no,
+                };
+                LmsrError::QuantityAboveMax(bought.checked_add(d).ok_or("overflow")?)
+            }
             other => return Err(format!("unknown vector error '{other}'").into()),
         };
         assert_eq!(
