@@ -130,6 +130,39 @@ fn cost_to_buy_rejects_every_out_of_domain_case_in_the_vectors() -> TestResult {
     Ok(())
 }
 
+/// I15 for a buy: the converted charge is never below the exact cost, and the double margin
+/// never overcharges by more than two base units.
+#[test]
+fn cost_to_buy_converted_never_undercharges() -> TestResult {
+    let vectors = load()?;
+    let mut checked = 0_usize;
+    for case in group(&vectors, "cost_to_buy")? {
+        if case.get("error").is_some() {
+            continue;
+        }
+        let (q_yes, q_no, b, d) = (
+            narrow(case, "q_yes")?,
+            narrow(case, "q_no")?,
+            narrow(case, "b")?,
+            narrow(case, "d")?,
+        );
+        let exact: u128 = text(case, "base_units")?.parse()?;
+        let converted = cost_to_buy_base_units(cost_to_buy(q_yes, q_no, b, outcome(case)?, d)?, b)?;
+        assert!(
+            converted >= exact,
+            "I15: buy converted to {converted} base units, below exact {exact}"
+        );
+        let over = converted.checked_sub(exact).ok_or("under exact")?;
+        assert!(
+            over <= 2,
+            "the double margin overcharged by {over} base units for ({q_yes}, {q_no}, {b}, {d})"
+        );
+        checked = checked.checked_add(1).ok_or("count")?;
+    }
+    assert!(checked >= 1_000, "only {checked} buy conversions checked");
+    Ok(())
+}
+
 #[test]
 fn subsidy_is_ceil_b_ln2_in_base_units() -> TestResult {
     let vectors = load()?;
