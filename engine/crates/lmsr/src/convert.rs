@@ -200,6 +200,29 @@ mod tests {
         Ok(())
     }
 
+    /// The truncation edge, named rather than left inside a generated case: one wei of shares
+    /// costs less than one wei of WAD, so the WAD figure is zero, and the margin plus the
+    /// round-up make the charge one base unit (I15).
+    #[test]
+    fn buying_one_wei_of_shares_costs_zero_wad_and_one_base_unit() -> Result<(), LmsrError> {
+        let wad = cost_to_buy(0, 0, B_MIN, Outcome::Yes, 1)?;
+        assert_eq!(
+            wad, 0,
+            "one wei of shares is below the WAD resolution of the cost"
+        );
+        assert_eq!(
+            cost_to_buy_base_units(wad, B_MIN)?,
+            1,
+            "the charge is still one base unit"
+        );
+        assert_eq!(
+            round_shares_down(int(1)?)?,
+            0,
+            "and it grants no shares, which is why #54 rejects such fills in Phase 4"
+        );
+        Ok(())
+    }
+
     #[test]
     fn buying_zero_or_fewer_shares_is_rejected() {
         for d in [0, -1, i128::MIN] {
