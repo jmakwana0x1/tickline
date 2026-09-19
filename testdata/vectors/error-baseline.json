@@ -1,0 +1,50 @@
+{
+  "cost": {
+    "case": {
+      "b": "10000000000000000000000000",
+      "bound_wei": "40000001",
+      "q_no": "78714509358838172545524478",
+      "q_yes": "53221677"
+    },
+    "worst_error_wei": "16767341"
+  },
+  "cost_closest_to_bound": {
+    "bound_wei": "931",
+    "case": {
+      "b": "232303568691423337071",
+      "bound_wei": "931",
+      "q_no": "2960064389257636549529",
+      "q_yes": "223062796647465553"
+    },
+    "ratio_per_million": "481203",
+    "worst_error_wei": "448"
+  },
+  "exp_wad_non_positive": {
+    "case": {
+      "x": "0"
+    },
+    "worst_error_wei": "0"
+  },
+  "exp_wad_positive": {
+    "case": {
+      "x": "135305999368893231588"
+    },
+    "worst_error_wei": "327338692582001795304378160426641006938302898921322539821"
+  },
+  "ln_wad": {
+    "case": {
+      "x": "791053597394088102765487122138206054793327443825867104494837927"
+    },
+    "worst_error_wei": "1"
+  },
+  "note": "Worst observed error per function against testdata/vectors/lmsr.json. Regenerate with `just update-error-baseline`. A rise of more than 2x, or any case above its bound, is a needs-jay (ADR-0010).",
+  "price": {
+    "case": {
+      "b": "10000000000000000000000000",
+      "q_no": "70857460628569568539036279",
+      "q_yes": "36583760358446092920095921"
+    },
+    "worst_error_wei": "1"
+  },
+  "schema": 1
+}

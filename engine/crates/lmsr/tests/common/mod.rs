@@ -22,6 +22,15 @@ pub fn vectors_path() -> PathBuf {
     }
 }
 
+/// Path of the committed accuracy snapshot (ADR-0010).
+pub fn baseline_path() -> PathBuf {
+    match std::env::var_os("TICKLINE_VECTORS_DIR") {
+        Some(dir) => PathBuf::from(dir).join("error-baseline.json"),
+        None => PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../testdata/vectors/error-baseline.json"),
+    }
+}
+
 /// Parses the vector file. Fails, rather than skipping, when it is missing.
 pub fn load() -> TestResult<serde_json::Value> {
     let path = vectors_path();

@@ -1,12 +1,13 @@
 //! `cost` and `prices` against the mpmath vectors, within the bounds derived in ADR-0009
 //! (issue #41).
 //!
-//! Two different assertions run over every case:
+//! Every case is checked against its derived bound: `|value - exact| <= E(b)` for the cost,
+//! `<= PRICE_ERROR_BOUND` for prices.
 //!
-//! - **the bound**: `|value - exact| <= E(b)` for the cost, `<= PRICE_ERROR_BOUND` for prices;
-//! - **tightness**: the measured maximum is at most half the bound. A bound nothing approaches is
-//!   not a test, and a measured error that creeps up on the bound means the derivation is wrong or
-//!   the implementation has degraded. Either is a `needs-jay`, never a constant to retune.
+//! Drift is caught separately, by the accuracy snapshot in `tests/error_baseline.rs`: the worst
+//! error per function is committed and asserted exactly, so a one-wei change shows up (ADR-0010).
+//! A fraction-of-the-bound check cannot do that, because it measures how conservative the
+//! derivation is rather than whether behaviour changed.
 
 // Shared by several test binaries; each uses a subset of its helpers.
 #[allow(dead_code)]
@@ -78,11 +79,6 @@ fn cost_matches_reference_vectors_within_derived_bound() -> TestResult {
             error <= bound,
             "cost({q_yes}, {q_no}, {b}) is {error} wei from exact, above the derived bound {bound}"
         );
-        let doubled = error.checked_mul(2).ok_or("tightness overflow")?;
-        assert!(
-            doubled <= bound,
-            "tightness: cost({q_yes}, {q_no}, {b}) is {error} wei from exact, over half the bound {bound}"
-        );
         if error.checked_mul(worst_ratio_den).ok_or("ratio")?
             > worst_ratio_num.checked_mul(bound).ok_or("ratio")?
         {
@@ -117,10 +113,6 @@ fn price_matches_reference_vectors_within_derived_bound() -> TestResult {
             assert!(
                 error <= bound,
                 "{label} price({q_yes}, {q_no}, {b}) is {error} wei from exact, above the bound {bound}"
-            );
-            assert!(
-                error.checked_mul(2).ok_or("tightness overflow")? <= bound,
-                "tightness: {label} price({q_yes}, {q_no}, {b}) is {error} wei from exact, over half the bound {bound}"
             );
             worst = worst.max(error);
         }
@@ -160,7 +152,7 @@ fn cases_at(b_wanted: i128) -> TestResult<usize> {
         let got = cost(q_yes, q_no, b_wanted)?;
         let error = distance(got, exact_bounds(case, "floor", "inexact")?)?;
         assert!(
-            error.checked_mul(2).ok_or("tightness overflow")? <= cost_error_bound(b_wanted)?,
+            error <= cost_error_bound(b_wanted)?,
             "cost({q_yes}, {q_no}, {b_wanted}) is {error} wei from exact"
         );
         checked = checked.checked_add(1).ok_or("count")?;

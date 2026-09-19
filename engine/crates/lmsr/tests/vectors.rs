@@ -1,6 +1,8 @@
 //! The reference vector file is present, complete, and was produced at the required precision
 //! (issue #38). The value checks against these vectors live with the code they test (S3 to S5).
 
+// Shared by several test binaries; each uses a subset of its helpers.
+#[allow(dead_code)]
 mod common;
 
 use common::{group, load, TestResult, REQUIRED_PRECISION_DIGITS};
