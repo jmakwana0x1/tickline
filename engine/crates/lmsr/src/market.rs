@@ -271,6 +271,26 @@ mod tests {
         Ok(())
     }
 
+    /// The other truncation edge: a buy moves the price by about `d * WAD / (4 * b)` wei, so at
+    /// the largest liquidity a one-wei buy does not move it at all. `PHASES.md` says buying YES
+    /// "strictly raises" the price; that holds above this resolution, and the property suite
+    /// splits the two cases.
+    #[test]
+    fn buying_below_the_price_resolution_leaves_the_price_unchanged() -> Result<(), LmsrError> {
+        let before = prices(0, 0, B_MAX)?.yes;
+        assert_eq!(
+            prices(1, 0, B_MAX)?.yes,
+            before,
+            "one wei at B_MAX moves nothing"
+        );
+        // Eight shares' worth of liquidity does move it.
+        let meaningful = B_MAX / WAD * 8 * WAD;
+        assert!(prices(meaningful, 0, B_MAX)?.yes > before);
+        // At the smallest liquidity even one wei lands.
+        assert!(prices(1, 0, B_MIN)?.yes > prices(0, 0, B_MIN)?.yes);
+        Ok(())
+    }
+
     #[test]
     fn price_saturates_under_large_imbalance_without_overflow() -> Result<(), LmsrError> {
         // exp(-1e12) underflows Solady's domain, so the price pins at the extremes.
