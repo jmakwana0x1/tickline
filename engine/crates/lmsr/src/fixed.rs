@@ -202,24 +202,24 @@ pub fn ln_wad(x: I256) -> Result<I256, LmsrError> {
 
 // ---------------------------------------------------------------------------------- checked ops
 
-fn int(v: i128) -> Result<I256, LmsrError> {
+pub(crate) fn int(v: i128) -> Result<I256, LmsrError> {
     I256::try_from(v).map_err(|_| LmsrError::ArithmeticOverflow("constant"))
 }
 
-fn mul(a: I256, b: I256) -> Result<I256, LmsrError> {
+pub(crate) fn mul(a: I256, b: I256) -> Result<I256, LmsrError> {
     a.checked_mul(b).ok_or(LmsrError::ArithmeticOverflow("mul"))
 }
 
-fn add(a: I256, b: I256) -> Result<I256, LmsrError> {
+pub(crate) fn add(a: I256, b: I256) -> Result<I256, LmsrError> {
     a.checked_add(b).ok_or(LmsrError::ArithmeticOverflow("add"))
 }
 
-fn sub(a: I256, b: I256) -> Result<I256, LmsrError> {
+pub(crate) fn sub(a: I256, b: I256) -> Result<I256, LmsrError> {
     a.checked_sub(b).ok_or(LmsrError::ArithmeticOverflow("sub"))
 }
 
 /// Signed division truncating toward zero, like EVM `sdiv`.
-fn div(a: I256, b: I256) -> Result<I256, LmsrError> {
+pub(crate) fn div(a: I256, b: I256) -> Result<I256, LmsrError> {
     a.checked_div(b).ok_or(LmsrError::ArithmeticOverflow("div"))
 }
 

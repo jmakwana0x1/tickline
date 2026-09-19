@@ -12,9 +12,11 @@
 #![forbid(unsafe_code)]
 
 pub mod fixed;
+pub mod market;
 
 pub use alloy_primitives::I256;
 pub use fixed::{exp_wad, ln_wad};
+pub use market::{cost, cost_error_bound, prices, Prices, B_MAX, B_MIN, PRICE_ERROR_BOUND, Q_MAX};
 
 /// One unit in signed WAD fixed point: 1e18.
 pub const WAD: i128 = 1_000_000_000_000_000_000;
@@ -40,6 +42,18 @@ pub enum LmsrError {
     /// The liquidity parameter `b` must be strictly positive.
     #[error("liquidity parameter b must be strictly positive, got {0}")]
     NonPositiveLiquidity(i128),
+    /// `b` is below [`market::B_MIN`].
+    #[error("liquidity parameter b is below the minimum, got {0}")]
+    LiquidityBelowMin(i128),
+    /// `b` is above [`market::B_MAX`].
+    #[error("liquidity parameter b is above the maximum, got {0}")]
+    LiquidityAboveMax(i128),
+    /// A quantity was negative. The market is buy-only, so quantities never decrease.
+    #[error("quantity must not be negative, got {0}")]
+    QuantityNegative(i128),
+    /// A quantity is above [`market::Q_MAX`].
+    #[error("quantity is above the maximum, got {0}")]
+    QuantityAboveMax(i128),
 }
 
 #[cfg(test)]

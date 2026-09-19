@@ -107,7 +107,15 @@ issue is closed through a merged PR. Release `phase-0` exists.
   - `inv_i15`: converted cost >= exact cost; converted shares <= exact shares.
 - **Differential:** `tools/reference/lmsr_ref.py` (mpmath, 60 digits) generates
   `testdata/vectors/lmsr.json` with at least 5,000 cases, including edge cases. Rust must match
-  within 1 wei in WAD, with rounding direction always toward the vault.
+  within its derived error bounds, with rounding direction always toward the vault:
+  - `exp_wad`, `ln_wad` and `price` within constant bounds (ADR-0009);
+  - `cost` within `E(b) = ceil(4 * b / WAD) + 1` wei, because Solady's `ln` error is multiplied
+    by `b / WAD`, which reaches 1e7 at `B_MAX`. A flat 1 wei is unreachable without abandoning the
+    shared Solady method (ADR-0008);
+  - every bound is derived from per-step bounds before being asserted, and the measured maximum
+    must be at most half the bound;
+  - I15 is guaranteed at the base-unit boundary by adding the bound as a margin before rounding
+    costs up. Shares still round down with no margin.
 - **Mutation:** `just mutants` on `lmsr`, zero surviving mutants on public functions.
 
 ### Gate 1
