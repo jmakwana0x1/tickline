@@ -3,20 +3,37 @@
 The state of the build. **Task state lives in GitHub issues, not here.** This file records
 gates, pins, open questions, and benchmarks.
 
-Last updated: 2026-09-17
+Last updated: 2026-09-20
 
 ---
 
 ## Current phase
 
-**Phase 1: LMSR math core.** `.phase` = `1`. Tracking issue #31. **Gate 1 is green**; the phase
-closes on Jay's go-ahead.
+**Phase 2: Protocol types and cross-stack vectors.** `.phase` = `2`. Tracking issue #59, labelled
+`needs-jay`: no Phase 2 code is written until the breakdown and decisions D1 to D5 are approved.
 
-Risk being retired: wrong prices, and insolvent rounding.
+Risk being retired: a signature that verifies in one stack and not another.
 
-Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006); Phase 1's own gate runs in the
-`phase-gate` workflow when the phase closes. Decisions D1 to D4 are answered on #31, and the slices
-run strictly in order, S1 to S7.
+Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006). With `.phase` = `2` that is now
+`just gate 1`, so every PR reruns the `lmsr` mutation and coverage steps; the CI gate job installs
+`uv` and the gate tools for that reason.
+
+**Phase 1 closed** on 2026-09-20: gate 1 green in CI at `9fd9d2c`, release `phase-1`. Phase 1
+retired this risk: wrong prices, and insolvent rounding. Its deliverables:
+
+| Deliverable | State |
+|---|---|
+| `exp_wad` / `ln_wad`, ported from Solady `9fe23ffd` | ✅ #51, verified bit-for-bit against the real Solidity library over all vector inputs |
+| Cost and price in log-sum-exp form, bounds from D2 | ✅ #52 |
+| Cost to buy, subsidy, base-unit conversions rounding toward the vault (I15) | ✅ #53 |
+| 60-digit `mpmath` reference oracle with provenance | ✅ #48, `just vectors-lmsr` reproduces byte for byte |
+| Coverage check that fails closed, vectors split by phase | ✅ #45 (it had always exited 0) |
+| Accuracy snapshot, `testdata/vectors/error-baseline.json` | ✅ ADR-0010 |
+| Property suite over the D2 bounds | ✅ #55, green at 256, 4,000 and 20,000 cases |
+| ADRs 0008 (`alloy-primitives` `I256`), 0009 (tolerances and margin), 0010 (accuracy snapshot) | ✅ |
+| Release `phase-1` | ✅ cut at the close commit |
+
+Carried to Phase 4: #54, reject fills below one base unit of shares.
 
 **Phase 0 closed** on 2026-09-17: gate 0 green on `main` at `44dc50d`, release `phase-0`.
 Phase 0 retired this risk: building against a misread x402 spec. Its deliverables:
@@ -73,7 +90,7 @@ tracking issue.
 |---|---|---|---|---|---|---|---|
 | 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0`, in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
 | 2026-09-17 | 0 | `44dc50d` | 9 | 2 | 9 | 1 | **Phase 0 close.** CI run 35186404431, all 10 jobs green; `just gh-verify` also green locally with an admin token. Log on #1. |
-| 2026-09-19 | 1 | `9fd9d2c` | 80 | 2 | 9 | 1 | **Phase 1 gate green.** `phase-gate` run 35447353612, `just gate 1` (phases 0 and 1), 438s. `lmsr`: 66 mutants, 65 caught, 1 unviable, 0 missed; coverage 99.69% of 643 lines; vectors reproduce byte for byte. Log on #31. |
+| 2026-09-19 | 1 | `9fd9d2c` | 80 | 2 | 9 | 1 | **Phase 1 close.** `phase-gate` run 35447353612, `just gate 1` (phases 0 and 1), 438s. `lmsr`: 66 mutants, 65 caught, 1 unviable, 0 missed; coverage 99.69% of 643 lines; vectors reproduce byte for byte. Log on #31. Only documentation merged between this commit and the close. |
 
 ### Guard evidence (Phase 0 exit)
 
