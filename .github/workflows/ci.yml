@@ -128,8 +128,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { submodules: recursive }
+      # gate 1 onward runs the reference oracle (uv) and the mutation and coverage
+      # steps (gate-tools), all at the versions in scripts/tool-versions.sh.
       - uses: ./.github/actions/setup
-        with: { sqlx: 'true' }
+        with: { sqlx: 'true', uv: 'true', gate-tools: 'true' }
       - run: just migrate
       - run: just gate-closed
 
