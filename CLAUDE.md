@@ -213,6 +213,14 @@ Everything is pinned. "Latest" is not a version. Pins live in `docs/STATUS.md` a
 | Clients | TypeScript, official x402 SDK | The SDK is the spec's own client; if our seller satisfies it, we read the spec right. |
 | Reference | Python + `mpmath` (60 digits) | An independent implementation to diff against. Never imported at runtime. |
 
+**A constant is pinned only when something independent of the expression says what it should be**:
+a literal from the spec, a value read off the deployed contract, or a number written out by hand.
+Never an expression rebuilt from the same parts. A test that recomputes `(1 << 40) - 1` to check
+`(1 << 40) - 1` agrees with itself and proves nothing, and mutation testing has caught this three
+times so far: the `s > n/2` boundary, the rendered error messages, and `UINT40_MAX`. Exercise the
+largest **accepted** value too, not only the first rejected one: that is what says the boundary
+sits where you think rather than one below it.
+
 **Local toolchain.** `just doctor` checks every tool and prints the install command for what is
 missing. `scripts/dev-setup.sh` installs the lot on a fresh Linux/WSL box.
 
