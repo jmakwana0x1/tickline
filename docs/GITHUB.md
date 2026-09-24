@@ -133,6 +133,12 @@ gh pr merge --squash --delete-branch   # only once `required` is green
 authority, stop-and-ask triggers and authorization protocol in `CLAUDE.md` §2 and §7. Those
 sections are the only statement of the rules; this document does not repeat them.
 
+**Run `just gitleaks-history` before a push that rewrites history.** The pre-commit hook scans
+staged files; the CI job scans every commit reachable from the branch, with `fetch-depth: 0`. A
+secret in an earlier commit is therefore invisible locally and red in CI, and removing it from the
+working tree is not enough: the commit that introduced it has to go too. PR #71 learned this by
+rewriting a branch after the fact. One command before the push turns that into five seconds.
+
 **`gh pr create --draft` is not optional.** A PR is draft until its gate is green; a non-draft PR is
 a request for Jay's attention, and asking for attention on red work wastes it.
 

@@ -4,7 +4,7 @@
   "provenance": {
     "tool": "foundry cast 1.8.1",
     "date": "2026-09-24",
-    "keys": "anvil accounts 0 and 1. Public test material, deliberately not committed; the addresses and signatures they produce are.",
+    "signers": "anvil accounts 0 and 1. Public test material, deliberately not committed; the addresses and signatures they produce are.",
     "commands": [
       "cast keccak \"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)\"",
       "cast keccak \"$(cast abi-encode 'f(bytes32,bytes32,bytes32,uint256,address)' <typeHash> $(cast keccak Tickline) $(cast keccak 1) <chainId> <verifyingContract>)\"",

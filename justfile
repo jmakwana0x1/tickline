@@ -70,6 +70,13 @@ lint:
     @bash scripts/test-no-stray-files.sh
     @bash scripts/test-check-coverage.sh
     @bash scripts/test-check-vectors-committed.sh
+    @bash scripts/test-check-vector-secrets.sh
+    @bash scripts/check-vector-secrets.sh
+
+# Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
+# staged files, so this is the check to run before a push, and after any history rewrite (#72).
+gitleaks-history:
+    @bash scripts/gitleaks-history.sh
 
 # Assert lmsr and protocol stay zero-IO (CLAUDE.md section 3).
 deps-check:
