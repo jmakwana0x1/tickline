@@ -136,6 +136,21 @@ sections are the only statement of the rules; this document does not repeat them
 **`gh pr create --draft` is not optional.** A PR is draft until its gate is green; a non-draft PR is
 a request for Jay's attention, and asking for attention on red work wastes it.
 
+**One `Closes`, and it names the slice issue.** GitHub reads a closing keyword anywhere in a PR
+body, not only on the `Closes #<issue#>` line, and "closing keyword" includes `close`, `closed`,
+`fix`, `fixes`, `resolve` and `resolves`. A sentence such as "after merge: close #31" therefore
+closes #31 on merge. Reference any other issue as `Refs #<issue#>`:
+
+| Issue | How the PR body names it |
+|---|---|
+| The slice this PR finishes | `Closes #<issue#>`, once |
+| The phase tracking issue | `Refs #<issue#>`, **never** `Closes` |
+| An issue this one depends on, or defers work to | `Refs #<issue#>` |
+
+A tracking issue closes at the phase close, after Jay's go-ahead and the release, and never as a
+side effect of a merge. This rule exists because PR #60 closed #31 a step early by saying
+"close #31" in a sentence about what would happen after the merge.
+
 ## 8. Phase open and close
 
 ```bash

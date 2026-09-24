@@ -138,6 +138,17 @@ so the reasoning is findable.
 
 ---
 
+## Standing pre-authorizations
+
+Decisions Jay has made in advance, so the work is not blocked when the condition is met. Each
+still produces its own PR and its own ADR.
+
+| Condition | What Claude does, without asking again | Where |
+|---|---|---|
+| Per-PR `just gate-closed` passes **15 minutes** | Move closed-phase mutation campaigns to `nightly-deep.yml` and `phase-gate.yml`; keep the test suites and the coverage thresholds per PR; record it as an ADR. Measured at 9m55s on 2026-09-20 with `.phase` = 2, and it grows with every phase that closes. | #59 |
+
+---
+
 ## Deliberate divergences from PHASES.md
 
 Recorded here so a reader who trusts `PHASES.md` is not surprised. Each has an ADR.
