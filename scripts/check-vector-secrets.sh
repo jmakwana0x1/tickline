@@ -40,34 +40,36 @@ def allowed_keys(text):
         raise SystemExit("✗ .gitleaks.toml has no [allowlist] section")
     return {m.lower() for m in re.findall(r"'''([0-9a-fA-F]{64})'''", block[1])}
 
-def leaves(node, path):
+def is_byte_array(node):
+    # The other shape a key takes in JSON: 32 or 64 byte values. The length is the tell, whatever
+    # the values are (Jay on #72).
+    return isinstance(node, list) and len(node) in (32, 64) and all(isinstance(x, int) for x in node)
+
+def scan_keyish(node, path, problems, allowed, file):
+    # Everything inside a key-ish field is suspect, at any depth: a plural field such as `keys`
+    # holds a list of keys, so the byte-array shape has to be looked for in every nested list and
+    # not only in the value directly under the field (Jay on #74).
+    if is_byte_array(node):
+        problems.append(f"{file}: {path} is inside a key-ish field and holds {len(node)} byte values")
+        return
     if isinstance(node, dict):
         for k, v in node.items():
-            yield from leaves(v, f"{path}.{k}")
+            scan_keyish(v, f"{path}.{k}", problems, allowed, file)
     elif isinstance(node, list):
         for i, v in enumerate(node):
-            yield from leaves(v, f"{path}[{i}]")
-    else:
-        yield path, node
+            scan_keyish(v, f"{path}[{i}]", problems, allowed, file)
+    elif isinstance(node, str):
+        if node.lower().removeprefix("0x") not in allowed:
+            problems.append(f"{file}: {path} is a key-ish field whose value is not an allowlisted anvil key")
+    # Anything else is a number, a boolean or null. A 256-bit key is not a JSON number, and
+    # lmsr.json's `provenance.seed` is the PRNG seed 402, not a secret.
 
 def walk(node, path, problems, allowed, file):
     if isinstance(node, dict):
         for k, v in node.items():
             here = f"{path}.{k}"
             if is_keyish(k):
-                # The other shape a key takes in JSON: 32 or 64 byte values in an array. The
-                # length is the tell, whatever the values are (Jay on #72).
-                if isinstance(v, list) and len(v) in (32, 64) and all(isinstance(x, int) for x in v):
-                    problems.append(f"{file}: {here} is a key-ish field holding {len(v)} byte values")
-                    continue
-                for leaf_path, leaf in leaves(v, here):
-                    # Only strings can carry key material: a 256-bit key is not a JSON number,
-                    # and lmsr.json's `provenance.seed` is the PRNG seed 402, not a secret.
-                    if not isinstance(leaf, str):
-                        continue
-                    value = leaf.lower().removeprefix("0x")
-                    if value not in allowed:
-                        problems.append(f"{file}: {leaf_path} is a key-ish field whose value is not an allowlisted anvil key")
+                scan_keyish(v, here, problems, allowed, file)
             else:
                 walk(v, here, problems, allowed, file)
     elif isinstance(node, list):

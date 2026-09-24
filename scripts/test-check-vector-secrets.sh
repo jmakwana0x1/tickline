@@ -85,6 +85,12 @@ expect "rejects a key as 32 byte values" fail "$dir"
 make_vectors "{\"secret\": [$bytes64]}"
 expect "rejects a key as 64 byte values" fail "$dir"
 
+make_vectors "{\"keys\": [[$bytes32], [$bytes32]]}"
+expect "rejects several keys nested as byte arrays under a plural field" fail "$dir"
+
+make_vectors "{\"accounts\": {\"secret\": {\"material\": [$bytes32]}}}"
+expect "rejects a byte array nested deeper inside a key-ish subtree" fail "$dir"
+
 make_vectors "{\"keys\": [$bytes20]}"
 expect "accepts an array under a key-ish field that is not key length" pass "$dir"
 
