@@ -233,6 +233,7 @@ Nothing in CI runs a command that a developer cannot run locally by the same nam
 | `just build` | Build every stack. |
 | `just fmt` / `just fmt-check` | Format / verify formatting (Rust, Solidity, TS). |
 | `just lint` | clippy `-D warnings`, forge fmt check, eslint, shellcheck. |
+| `just gitleaks-history` | Scan the whole history for secrets, as CI does. Run it before a push, and after any history rewrite. |
 
 ### Tests
 | Command | Does |
