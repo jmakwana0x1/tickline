@@ -110,6 +110,17 @@ impl ProtocolError {
     }
 }
 
+/// The reserved code prefix for every signed object family (ADR-0012).
+///
+/// One namespace per family, fixed before the codes cross a stack boundary: retrofitting a
+/// namespace once Solidity and TypeScript both carry the codes would be a breaking change in
+/// three places at once. `SIG_` is signatures (#62); `RCPT_` receipts (#64), `MID_` market ids
+/// (#65) and `ENV_` the 402 envelopes (#66) are reserved and unused so far.
+pub const CODE_PREFIXES: [&str; 4] = ["SIG_", "RCPT_", "MID_", "ENV_"];
+
+/// Every published code list. S3 to S5 append theirs, and the registry test then covers them.
+pub const ALL_ERROR_CODES: [&[&str]; 1] = [&SIGNATURE_ERROR_CODES];
+
 /// Every code [`ProtocolError::code`] can return.
 ///
 /// The list exists so a test can assert that the set is exactly this and that no two variants

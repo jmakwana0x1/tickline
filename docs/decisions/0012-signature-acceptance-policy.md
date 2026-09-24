@@ -76,6 +76,21 @@ The codes are flat, one per rejection, so `Scalar` stays a Rust implementation d
 `SIG_R_ZERO` and `SIG_S_ZERO` are separate codes rather than one code with a field, which would
 force Solidity to encode which component failed.
 
+**The prefixes are reserved now, before anything carries them.** One namespace per signed object
+family, fixed while this ADR is being written rather than retrofitted later:
+
+| Prefix | Family | Slice |
+|---|---|---|
+| `SIG_` | signature validation | #62 |
+| `RCPT_` | `PositionReceipt` | #64 |
+| `MID_` | `MarketId` | #65 |
+| `ENV_` | 402 challenge and payment envelopes | #66 |
+
+Each family publishes its own list, `ALL_ERROR_CODES` collects them, and one registry test asserts
+that every code carries exactly one reserved prefix and that no code is used by two families.
+Adding a namespace after Solidity and TypeScript both carry the codes would be a breaking change
+in three stacks at once, which is the whole reason to spend the paragraph now.
+
 From #67 the vector file carries the code, `contracts/src/TicklineTypes.sol` declares one custom
 error per code, and the TypeScript client surfaces the code on its error. Changing a code is a
 breaking change for every stack, so it takes its own ADR.

@@ -15,7 +15,7 @@ use alloy_primitives::{Address, B256, U256};
 use common::{address, group, hash, load, section, signature_bytes, text, uint, TestResult};
 use protocol::{
     signature::{CURVE_ORDER, HALF_CURVE_ORDER},
-    ProtocolError, Scalar, Signature, SIGNATURE_ERROR_CODES,
+    ProtocolError, Scalar, Signature, ALL_ERROR_CODES, CODE_PREFIXES, SIGNATURE_ERROR_CODES,
 };
 
 /// One valid fixture: the bytes, the digest they were signed over, and who signed.
@@ -366,6 +366,31 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
         assert_eq!(error.code(), *code, "{error}");
     }
 
+    // The published list and the table above are both hand-maintained, so a new variant could get
+    // an arm in code() and be forgotten here. This match has no catch-all: adding a variant stops
+    // this file compiling until it is listed, and the index catches a reordering.
+    fn position(error: &ProtocolError) -> usize {
+        match error {
+            ProtocolError::SignatureLength { .. } => 0,
+            ProtocolError::CompactSignature => 1,
+            ProtocolError::SignatureRecoveryId { .. } => 2,
+            ProtocolError::ScalarZero { scalar: Scalar::R } => 3,
+            ProtocolError::ScalarZero { scalar: Scalar::S } => 4,
+            ProtocolError::ScalarAboveCurveOrder { scalar: Scalar::R } => 5,
+            ProtocolError::ScalarAboveCurveOrder { scalar: Scalar::S } => 6,
+            ProtocolError::HighS => 7,
+            ProtocolError::Unrecoverable => 8,
+            ProtocolError::WrongSigner { .. } => 9,
+        }
+    }
+    for (index, (error, _)) in coded.iter().enumerate() {
+        assert_eq!(
+            position(error),
+            index,
+            "the table is out of order at {index}"
+        );
+    }
+
     // The published list is exactly the codes the variants produce, in the same order, and every
     // one of them is distinct: two rejections sharing a code would be indistinguishable to a
     // client and to the vault.
@@ -381,6 +406,44 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
     assert_ne!(
         ProtocolError::ScalarZero { scalar: Scalar::R }.code(),
         ProtocolError::ScalarZero { scalar: Scalar::S }.code()
+    );
+    Ok(())
+}
+
+#[test]
+fn every_code_is_namespaced_and_globally_unique() -> TestResult {
+    // One namespace per signed object family, reserved before the codes cross a stack boundary.
+    // S3 to S5 add RCPT_, MID_ and ENV_ lists to ALL_ERROR_CODES, and this test then covers them
+    // without being touched.
+    let mut seen: Vec<&str> = Vec::new();
+    for list in ALL_ERROR_CODES {
+        for code in list {
+            let prefixes: Vec<&str> = CODE_PREFIXES
+                .iter()
+                .copied()
+                .filter(|p| code.starts_with(p))
+                .collect();
+            assert_eq!(
+                prefixes.len(),
+                1,
+                "{code} must carry exactly one reserved prefix"
+            );
+            assert!(
+                code.len() > prefixes.first().ok_or("prefix")?.len(),
+                "{code} is a bare prefix"
+            );
+            seen.push(code);
+        }
+    }
+
+    let total = seen.len();
+    seen.sort_unstable();
+    seen.dedup();
+    assert_eq!(seen.len(), total, "a code is used by two families");
+
+    assert_eq!(
+        CODE_PREFIXES.to_vec(),
+        vec!["SIG_", "RCPT_", "MID_", "ENV_"]
     );
     Ok(())
 }

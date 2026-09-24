@@ -15,7 +15,7 @@ pub mod signature;
 
 mod error;
 
-pub use error::{ProtocolError, Scalar, SIGNATURE_ERROR_CODES};
+pub use error::{ProtocolError, Scalar, ALL_ERROR_CODES, CODE_PREFIXES, SIGNATURE_ERROR_CODES};
 pub use signature::Signature;
 
 /// EIP-712 domain name for every Tickline-owned signed struct.
