@@ -302,7 +302,10 @@ fn withdraw_delay_at_or_above_uint40_is_rejected() -> TestResult {
     let case = named(group(section(&vectors, "x402")?, "channels")?, "salt1")?;
     let config = section(case, "config")?;
 
-    for delay in [UINT40_MAX + 1, u64::MAX] {
+    // 2^40 and u64::MAX, written out rather than derived from UINT40_MAX: deriving the boundary
+    // from the constant under test lets a typo in the constant agree with itself, which is
+    // exactly what cargo-mutants found by changing `(1 << 40) - 1` and seeing nothing fail.
+    for delay in [1_099_511_627_776, u64::MAX] {
         let built = ChannelConfig::new(
             address(config, "payer")?,
             address(config, "payer_authorizer")?,
@@ -318,6 +321,29 @@ fn withdraw_delay_at_or_above_uint40_is_rejected() -> TestResult {
             "X402_WITHDRAW_DELAY_WIDTH"
         );
     }
+    Ok(())
+}
+
+#[test]
+fn uint40_max_is_two_to_the_fortieth_minus_one() -> TestResult {
+    // Written out, so a shift typo cannot hide behind a test that recomputes it the same way.
+    assert_eq!(UINT40_MAX, 1_099_511_627_775);
+
+    // The largest uint40 is a served channel: it is a valid width and far above our floor, so
+    // the width rule and the policy rule cannot be confused for one another at the boundary.
+    let vectors = load()?;
+    let case = named(group(section(&vectors, "x402")?, "channels")?, "salt1")?;
+    let config = section(case, "config")?;
+    let at_the_top = ChannelConfig::new(
+        address(config, "payer")?,
+        address(config, "payer_authorizer")?,
+        address(config, "receiver")?,
+        address(config, "receiver_authorizer")?,
+        address(config, "token")?,
+        1_099_511_627_775,
+        hash(config, "salt")?,
+    )?;
+    assert_eq!(at_the_top.withdraw_delay, UINT40_MAX);
     Ok(())
 }
 
