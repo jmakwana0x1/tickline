@@ -133,8 +133,8 @@ Budget-to-shares inverse. Multi-outcome LMSR. Anything with IO.
 ### Build
 - Voucher types exactly as defined in `docs/spec-notes.md`. Do not invent fields.
 - `PositionReceipt` (ours), EIP-712 domain `Tickline` version `1`, `chainId`, `verifyingContract` = vault:
-  `marketId bytes32, agent address, yesShares uint256, noShares uint256, costPaid uint256,
-  feesPaid uint256, nonce uint64, epoch uint32`.
+  `marketId bytes32, agent address, yesShares uint128, noShares uint128, costPaid uint128,
+  feesPaid uint128, nonce uint64, epoch uint32`.
 - `MarketId = keccak256(abi.encode(creator, templateId, templateParamsHash, deadline, b, epochLength, salt))`.
 - 402 challenge and payment header encode/decode for V2 envelopes.
 - Vector generator in `agents/` (viem plus the official SDK) writes `testdata/vectors/eip712.json`
