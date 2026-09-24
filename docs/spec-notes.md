@@ -84,13 +84,68 @@ ClaimBatch(ClaimEntry[] claims)ClaimEntry(bytes32 channelId,uint128 maxClaimable
 `maxClaimableAmount` is **`uint128`**, not `uint256`.
 
 **Verified against the deployed bytecode**, not just the source, on Base Sepolia
-(`0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`) on 2026-09-15:
+(`0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003`). The first three on 2026-09-15, the last two on
+2026-09-24: **all five are public constants with generated getters**, so every type hash can be
+read straight off the deployment rather than recomputed.
 
-| Type hash | Value | |
+| Getter | Value | |
 |---|---|---|
-| `VOUCHER_TYPEHASH` | `0x1e1bd6ff84c3e0d9029a292b212e039c0ca97ec497c55191a4a5874294609a69` | matches `keccak256` of the string above |
-| `REFUND_TYPEHASH` | `0xbe23ad087435072cd69b49cc5b92de10ee610fce7ae0ab428307972d764bb216` | matches |
-| `CHANNEL_CONFIG_TYPEHASH` | `0x1c9a06ceab9b0ebbd3301dc56c9111bb6d9af421356dc9ccb3b7084c755db308` | matches |
+| `CHANNEL_CONFIG_TYPEHASH()` | `0x1c9a06ceab9b0ebbd3301dc56c9111bb6d9af421356dc9ccb3b7084c755db308` | matches `keccak256` of the string above |
+| `VOUCHER_TYPEHASH()` | `0x1e1bd6ff84c3e0d9029a292b212e039c0ca97ec497c55191a4a5874294609a69` | matches |
+| `REFUND_TYPEHASH()` | `0xbe23ad087435072cd69b49cc5b92de10ee610fce7ae0ab428307972d764bb216` | matches |
+| `CLAIM_ENTRY_TYPEHASH()` | `0x30b9a0367528fca13c3e8ec6134c3113f1887ebe7a1ad61de0955aac288b0cf5` | matches |
+| `CLAIM_BATCH_TYPEHASH()` | `0x42bd57c010b870c2e96203c66341f28a6a19b4d56a74533a8eb5f706b9fd6d57` | matches |
+
+Reading a constant proves the contract's own opinion of its type hash. Recomputing proves only
+that two implementations of `keccak256` agree, which is why #67's fork suite reads the getters.
+
+**`Refund` is deliberately not in `testdata/vectors/eip712.json`.** Four of these five types are:
+`ChannelConfig`, `Voucher`, `ClaimEntry`, `ClaimBatch`. Nothing between Phase 2 and Phase 5 signs a
+refund, and adding the fifth later is additive: a type string, a vector group, and no change to
+anything existing. **#73** is the Phase 5 slice that adds it, and the research is already done, so
+a reader who counts four types here and five on the contract is looking at a decision rather than
+an omission.
+
+### Three digest getters, and the wire struct
+
+| Getter | Returns |
+|---|---|
+| `getChannelId(ChannelConfig)` | the channel id, the config's digest under this domain |
+| `getVoucherDigest(bytes32,uint128)` | the digest a payer signs |
+| `getClaimBatchDigest(VoucherClaim[])` | the digest a receiver authorizer signs over a whole batch |
+| `getRefundDigest(bytes32,uint256,uint128)` | the refund digest, for #73 |
+
+`getClaimBatchDigest` takes a wire struct that is **not** the signed type, and the difference
+matters when Phase 3 and Phase 5 build it:
+
+```solidity
+VoucherClaim {
+    Voucher { ChannelConfig config; uint128 maxClaimableAmount } voucher;
+    bytes    signature;
+    uint128  totalClaimed;
+}
+```
+
+Two things follow. It carries the **`ChannelConfig`** and derives the `channelId` itself, so the
+wire struct nests one level deeper than the signed `Voucher`, while the `ClaimEntry` that is
+hashed is one level flatter. And the third field is **`totalClaimed`**, the cumulative total the
+`ClaimEntry` type string names, **never a per-batch delta**: the contract reads
+`voucherClaims[i].totalClaimed` when it builds the entry hash, and vouchers supersede each other
+precisely because that number only rises. Calling it an "amount" anywhere in our code or docs
+invites a delta into the slot where the running total belongs, which is how I4 and I13 fail
+quietly.
+
+Confirmed on 2026-09-24 against the deployment, with a two-entry batch rather than one, because a
+single-element array hides an ordering or concatenation mistake:
+
+| Value | Read from the contract |
+|---|---|
+| `getChannelId` for the fixture config | `0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab` |
+| `getVoucherDigest(channelId, 1000000)` | `0x0d64a8e669f88cd5e7d086129c5a8c02760ccb5f14d2f8c41496bab83e4e9cea` |
+| `getClaimBatchDigest` over two entries | `0xca9f200d7e8c61c6c37fafdbcf046e8c258d7b6e17c0e72b425ea768bcf62a81` |
+
+Each equals what `engine/crates/protocol` computes, and the fixtures are in
+`testdata/vectors/eip712-primitives.json` with the getter each came from.
 
 Reproduce with:
 
@@ -421,3 +476,43 @@ build against the decision, not the question.
 | Solady's `expWad`/`lnWad` port to Rust unchanged | Phase 1's whole numerical method | port, then diff against `mpmath` at 60 digits |
 | ~~`x402BatchSettlement` is deployed at the canonical address on Base Sepolia~~ | n/a | **verified 2026-09-15**: 22,353 bytes of code at that address, and all three type hashes read back matching (§1) |
 | ~~Base Sepolia supports EIP-1153~~ | n/a | **implied verified**: the contract uses `ReentrancyGuardTransient` and is deployed and callable there |
+
+---
+
+## Appendix: the deployment's selectors
+
+Recovered from the runtime bytecode of `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` on Base
+Sepolia on 2026-09-24 and resolved against the openchain signature database. All 25 resolved.
+
+This is committed because it is evidence about the deployment rather than about the spec, and
+because recovering it cost real time: `getClaimBatchDigest`'s argument tuple could not be guessed,
+and four plausible shapes all reverted identically. #67's fork suite asserts each selector it
+calls, so a redeployed escrow with a changed signature fails by name instead of as a bare revert.
+
+| Selector | Signature |
+|---|---|
+| `0x8e4a68ac` | `CHANNEL_CONFIG_TYPEHASH()` |
+| `0x7a7ebd7b` | `channels(bytes32)` |
+| `0x29237b0c` | `claim((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])` |
+| `0x53ab0fae` | `CLAIM_BATCH_TYPEHASH()` |
+| `0xba94ec0d` | `CLAIM_ENTRY_TYPEHASH()` |
+| `0xe43ce1f2` | `claimWithSignature((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[],bytes)` |
+| `0x140f1e75` | `deposit((address,address,address,address,address,uint40,bytes32),uint128,address,bytes)` |
+| `0x84b0196e` | `eip712Domain()` |
+| `0xe88377b1` | `finalizeWithdraw((address,address,address,address,address,uint40,bytes32))` |
+| `0x5e5e0b87` | `getChannelId((address,address,address,address,address,uint40,bytes32))` |
+| `0x488ccc3b` | `getClaimBatchDigest((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])` |
+| `0xe25cf189` | `getRefundDigest(bytes32,uint256,uint128)` |
+| `0x862bb199` | `getVoucherDigest(bytes32,uint128)` |
+| `0xcf5cf3dc` | `initiateWithdraw((address,address,address,address,address,uint40,bytes32),uint128)` |
+| `0x1fc3277d` | `MAX_WITHDRAW_DELAY()` |
+| `0xae159439` | `MIN_WITHDRAW_DELAY()` |
+| `0xac9650d8` | `multicall(bytes[])` |
+| `0xb7f06ebe` | `pendingWithdrawals(bytes32)` |
+| `0x21ff6389` | `receivers(address,address)` |
+| `0xdce4bfae` | `refund((address,address,address,address,address,uint40,bytes32),uint128)` |
+| `0x1e69ef40` | `REFUND_TYPEHASH()` |
+| `0xf0dc792e` | `refundNonce(bytes32)` |
+| `0xb77433e9` | `refundWithSignature((address,address,address,address,address,uint40,bytes32),uint128,uint256,bytes)` |
+| `0x9db32a8f` | `settle(address,address)` |
+| `0x94739e87` | `VOUCHER_TYPEHASH()` |

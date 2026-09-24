@@ -60,3 +60,28 @@ The slice issue template asks whether an ADR is needed before work starts, the P
 definition-of-done repeats the question, and `CLAUDE.md` §2 tells Claude to stop and write one
 rather than proceed. `PHASES.md` names the specific decisions that cannot be implemented
 without one.
+
+## Update, 2026-09-24
+
+Made at Jay's direction on #63, and appended rather than edited, which is the rule it states.
+
+**Supersede when a decision reverses or narrows an earlier one. Update when it extends within the
+same frame.**
+
+An `## Update` section is added below the original, which is left as it was, so the record of what
+was believed on the original date survives. A superseding ADR gets its own number, and the old one
+is marked `superseded by ADR-NNNN`.
+
+The distinction is for the reader, not the author. `superseded by` says the old decision is dead
+and its text can no longer be trusted; a reader who sees it on an ADR whose substance still holds
+has to diff two documents to discover that nothing changed. ADR-0012 is the example that prompted
+this: its signature policy did not change when `X402_`, `POLICY_` and per-family reach were added
+on 2026-09-24, so it took an update. ADR-0002 took one for the same reason when I4 to I7 were
+confirmed and I16 was added.
+
+Precedent so far:
+
+| ADR | What happened | Which |
+|---|---|---|
+| 0002 | I4 to I6 confirmed, I7 reworded, I16 added | update |
+| 0012 | `X402_` and `POLICY_` reserved, families given a reach | update |

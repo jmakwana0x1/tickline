@@ -25,24 +25,55 @@ pub fn type_hash(type_string: &str) -> B256 {
 
 /// The EIP-712 domain every Tickline-owned signed struct is bound to.
 ///
-/// `name` and `version` are fixed by [`crate::DOMAIN_NAME`] and [`crate::DOMAIN_VERSION`], so a
-/// caller can vary only the two fields that separate one deployment from another. Both of those
-/// matter: without them a receipt signed for one chain or one vault would verify against another
-/// (the same reasoning as D3's `MarketId` tag, #59).
+/// `name` and `version` come from the constructor, not from the caller: [`Domain::new`] is the
+/// Tickline domain and [`Domain::x402`] the escrow's, and nothing can invent a third. A caller
+/// varies only the two fields that separate one deployment from another, and both matter: without
+/// them a receipt signed for one chain or one vault would verify against another (the same
+/// reasoning as D3's `MarketId` tag, #59).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Domain {
+    name: &'static str,
+    version: &'static str,
     chain_id: u64,
     verifying_contract: Address,
 }
 
 impl Domain {
-    /// A domain for `verifying_contract` on `chain_id`.
+    /// The Tickline domain for `verifying_contract` (the vault) on `chain_id`.
     #[must_use]
     pub const fn new(chain_id: u64, verifying_contract: Address) -> Self {
         Self {
+            name: DOMAIN_NAME,
+            version: DOMAIN_VERSION,
             chain_id,
             verifying_contract,
         }
+    }
+
+    /// The x402 batch-settlement domain for the escrow at `verifying_contract` on `chain_id`.
+    ///
+    /// A separate domain, not a variant of ours: the escrow binds its own name and version, and
+    /// `eip712Domain()` on the deployment is what those constants are checked against (#63).
+    #[must_use]
+    pub const fn x402(chain_id: u64, verifying_contract: Address) -> Self {
+        Self {
+            name: crate::x402::DOMAIN_NAME,
+            version: crate::x402::DOMAIN_VERSION,
+            chain_id,
+            verifying_contract,
+        }
+    }
+
+    /// The domain name this separator hashes.
+    #[must_use]
+    pub const fn name(&self) -> &'static str {
+        self.name
+    }
+
+    /// The domain version this separator hashes.
+    #[must_use]
+    pub const fn version(&self) -> &'static str {
+        self.version
     }
 
     /// The chain this domain is bound to.
@@ -65,8 +96,8 @@ impl Domain {
     pub fn separator(&self) -> B256 {
         let mut encoded = Vec::with_capacity(160);
         encoded.extend_from_slice(type_hash(DOMAIN_TYPE).as_slice());
-        encoded.extend_from_slice(keccak256(DOMAIN_NAME.as_bytes()).as_slice());
-        encoded.extend_from_slice(keccak256(DOMAIN_VERSION.as_bytes()).as_slice());
+        encoded.extend_from_slice(keccak256(self.name.as_bytes()).as_slice());
+        encoded.extend_from_slice(keccak256(self.version.as_bytes()).as_slice());
         encoded.extend_from_slice(&U256::from(self.chain_id).to_be_bytes::<32>());
         encoded.extend_from_slice(
             B256::left_padding_from(self.verifying_contract.as_slice()).as_slice(),

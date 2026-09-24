@@ -59,5 +59,125 @@
     "source": "SEC 2 section 2.4.1",
     "n": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
     "half_n": "0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0"
+  },
+  "x402": {
+    "note": "The x402 batch-settlement types, which Tickline does not define. Every value here was read from the deployed escrow on Base Sepolia on 2026-09-24, or computed and then confirmed against it. #67 folds this into the generated eip712.json and the fork suite re-reads each getter.",
+    "escrow": "0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003",
+    "chain_id": 84532,
+    "domain": {
+      "source": "eip712Domain()",
+      "name": "x402 Batch Settlement",
+      "version": "1",
+      "separator": "0xfdef80764086b1e0fc6ba99f0cb9aa1d59109fda7c23d60334c89d2de44dffce"
+    },
+    "type_hashes": [
+      {
+        "name": "ChannelConfig",
+        "getter": "CHANNEL_CONFIG_TYPEHASH()",
+        "type_string": "ChannelConfig(address payer,address payerAuthorizer,address receiver,address receiverAuthorizer,address token,uint40 withdrawDelay,bytes32 salt)",
+        "hash": "0x1c9a06ceab9b0ebbd3301dc56c9111bb6d9af421356dc9ccb3b7084c755db308"
+      },
+      {
+        "name": "Voucher",
+        "getter": "VOUCHER_TYPEHASH()",
+        "type_string": "Voucher(bytes32 channelId,uint128 maxClaimableAmount)",
+        "hash": "0x1e1bd6ff84c3e0d9029a292b212e039c0ca97ec497c55191a4a5874294609a69"
+      },
+      {
+        "name": "ClaimEntry",
+        "getter": "CLAIM_ENTRY_TYPEHASH()",
+        "type_string": "ClaimEntry(bytes32 channelId,uint128 maxClaimableAmount,uint128 totalClaimed)",
+        "hash": "0x30b9a0367528fca13c3e8ec6134c3113f1887ebe7a1ad61de0955aac288b0cf5"
+      },
+      {
+        "name": "ClaimBatch",
+        "getter": "CLAIM_BATCH_TYPEHASH()",
+        "type_string": "ClaimBatch(ClaimEntry[] claims)ClaimEntry(bytes32 channelId,uint128 maxClaimableAmount,uint128 totalClaimed)",
+        "hash": "0x42bd57c010b870c2e96203c66341f28a6a19b4d56a74533a8eb5f706b9fd6d57"
+      }
+    ],
+    "channels": [
+      {
+        "name": "salt1",
+        "getter": "getChannelId(ChannelConfig)",
+        "config": {
+          "payer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "payer_authorizer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "receiver": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "receiver_authorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "withdraw_delay": 3600,
+          "salt": "0x0000000000000000000000000000000000000000000000000000000000000001"
+        },
+        "struct_hash": "0x8e64ccfeb0207e649f85b77f9ed50c82a3fe7c0baedfdae5d515e737a2cb4949",
+        "channel_id": "0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab"
+      },
+      {
+        "name": "salt2",
+        "getter": "getChannelId(ChannelConfig)",
+        "config": {
+          "payer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "payer_authorizer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          "receiver": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "receiver_authorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "withdraw_delay": 3600,
+          "salt": "0x0000000000000000000000000000000000000000000000000000000000000002"
+        },
+        "channel_id": "0x3cb86e26032b5cf9034fb53c6539a57bfe0edebaca28039ce5c166cb6ed0c6eb"
+      }
+    ],
+    "vouchers": [
+      {
+        "name": "one_usdc",
+        "getter": "getVoucherDigest(bytes32,uint128)",
+        "channel_id": "0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab",
+        "max_claimable_amount": "1000000",
+        "digest": "0x0d64a8e669f88cd5e7d086129c5a8c02760ccb5f14d2f8c41496bab83e4e9cea"
+      }
+    ],
+    "claim_entries": [
+      {
+        "name": "partial",
+        "channel_id": "0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab",
+        "max_claimable_amount": "1000000",
+        "total_claimed": "250000",
+        "struct_hash": "0xf69b3aed8ba7751ef2071363b03725877d94cb2ff4641c637644d85ac4792f8d"
+      },
+      {
+        "name": "full",
+        "channel_id": "0x3cb86e26032b5cf9034fb53c6539a57bfe0edebaca28039ce5c166cb6ed0c6eb",
+        "max_claimable_amount": "5000000",
+        "total_claimed": "5000000",
+        "struct_hash": "0x1f8fa1b45632a7277123247fb50ad33dc29f64fd5b68eabcb5ef04c80c9f98ec"
+      }
+    ],
+    "claim_batches": [
+      {
+        "name": "two_entries",
+        "getter": "getClaimBatchDigest(VoucherClaim[])",
+        "entries": [
+          "partial",
+          "full"
+        ],
+        "entries_root": "0xd0154767ee5b5d6eabde86b0225ba095eeae0ae863ff0139fccee618ccde7df4",
+        "struct_hash": "0x896148a192e38114ea8c831f31798f8d206290f3c5483a2362cd4f461e3ae7ec",
+        "digest": "0xca9f200d7e8c61c6c37fafdbcf046e8c258d7b6e17c0e72b425ea768bcf62a81"
+      },
+      {
+        "name": "one_entry",
+        "getter": "getClaimBatchDigest(VoucherClaim[])",
+        "entries": [
+          "partial"
+        ],
+        "digest": "0x72c10fa4f1763ab9431547527325ad9ee6ca09e5e2a3a240aa82f4647e237137",
+        "why": "Kept only so a failure distinguishes wrong batch framing from wrong concatenation; the two-entry case is what Phase 5 signs."
+      }
+    ],
+    "wire_struct": {
+      "note": "What getClaimBatchDigest takes, which is not the signed type: it carries the ChannelConfig and derives the channelId itself, and its third field is totalClaimed, cumulative, never a per-batch delta.",
+      "solidity": "VoucherClaim { Voucher { ChannelConfig config; uint128 maxClaimableAmount } voucher; bytes signature; uint128 totalClaimed }",
+      "selector": "0x488ccc3b"
+    }
   }
 }
