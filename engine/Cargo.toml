@@ -31,6 +31,8 @@ settlement = { path = "crates/settlement" }
 thiserror = "2.0"
 # 256-bit integers for lmsr's Solady port (ADR-0008). Exact pin, no default features.
 alloy-primitives = { version = "=1.7.3", default-features = false }
+# secp256k1 recovery for protocol (ADR-0011). Pure Rust, no signer wrapper: ADR-0012 inspects s.
+k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 
 # IO layers only. lmsr and protocol must not reach for these
 # (enforced by scripts/check-crate-boundaries.sh).
