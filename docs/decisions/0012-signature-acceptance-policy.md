@@ -53,6 +53,33 @@ this decision rather than consequences of it:
    `contracts/src/TicklineTypes.sol` the vectors test (D4), and its acceptance tests load the same
    rejection vectors.
 
+## The code is the contract, not the message
+
+Each rejection carries a flat, stable code, and that is what crosses a stack boundary:
+
+| Code | Rule |
+|---|---|
+| `SIG_LENGTH` | not 65 bytes |
+| `SIG_COMPACT` | 64 bytes, EIP-2098 |
+| `SIG_RECOVERY_ID` | `v` outside {27, 28} |
+| `SIG_R_ZERO`, `SIG_S_ZERO` | a zero scalar |
+| `SIG_R_ABOVE_ORDER`, `SIG_S_ABOVE_ORDER` | a scalar at or above `n` |
+| `SIG_HIGH_S` | `s` above `n/2` |
+| `SIG_UNRECOVERABLE` | no signer for this signature and digest |
+| `SIG_WRONG_SIGNER` | a valid signature belonging to someone else |
+
+The English message is for a human reading logs. It cannot be the cross-stack contract, because a
+Solidity custom error carries no message at all and a TypeScript client would invent its own
+wording, so a vector file that pinned the wording could never be satisfied by all three stacks.
+
+The codes are flat, one per rejection, so `Scalar` stays a Rust implementation detail:
+`SIG_R_ZERO` and `SIG_S_ZERO` are separate codes rather than one code with a field, which would
+force Solidity to encode which component failed.
+
+From #67 the vector file carries the code, `contracts/src/TicklineTypes.sol` declares one custom
+error per code, and the TypeScript client surfaces the code on its error. Changing a code is a
+breaking change for every stack, so it takes its own ADR.
+
 ## Consequences
 
 A client that signs with a 0/1 `v`, or sends a compact signature, gets a 4xx with a named error
@@ -69,5 +96,7 @@ only, which is why ADR-0011's dependency list has no randomness in it.
 ## How this is enforced
 
 `engine/crates/protocol/tests/signature.rs` names one test per rule, and every rejection has its
-own error variant with a test that triggers it. From #67 the same cases are vectors that all three
-stacks run, and from Phase 3 the vault runs them too.
+own error variant with a test that triggers it. `every_rejection_carries_its_stable_code` asserts
+the table above, that the published list is exactly what the variants produce, and that no two
+rejections share a code. From #67 the same cases are vectors that all three stacks run, and from
+Phase 3 the vault runs them too.

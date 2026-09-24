@@ -15,7 +15,7 @@ use alloy_primitives::{Address, B256, U256};
 use common::{address, group, hash, load, section, signature_bytes, text, uint, TestResult};
 use protocol::{
     signature::{CURVE_ORDER, HALF_CURVE_ORDER},
-    ProtocolError, Scalar, Signature,
+    ProtocolError, Scalar, Signature, SIGNATURE_ERROR_CODES,
 };
 
 /// One valid fixture: the bytes, the digest they were signed over, and who signed.
@@ -321,6 +321,67 @@ fn every_rejection_reason_renders_its_own_message() -> TestResult {
     .to_string();
     assert!(text.contains(&expected.to_string()), "{text}");
     assert!(text.contains(&recovered.to_string()), "{text}");
+    Ok(())
+}
+
+#[test]
+fn every_rejection_carries_its_stable_code() -> TestResult {
+    // The code, not the wording, is what #67 puts in the vector file and what TicklineTypes.sol
+    // declares as a custom error: Solidity errors carry no message, so a English string could
+    // never be matched across the three stacks.
+    let coded = [
+        (ProtocolError::SignatureLength { got: 64 }, "SIG_LENGTH"),
+        (ProtocolError::CompactSignature, "SIG_COMPACT"),
+        (
+            ProtocolError::SignatureRecoveryId { got: 1 },
+            "SIG_RECOVERY_ID",
+        ),
+        (
+            ProtocolError::ScalarZero { scalar: Scalar::R },
+            "SIG_R_ZERO",
+        ),
+        (
+            ProtocolError::ScalarZero { scalar: Scalar::S },
+            "SIG_S_ZERO",
+        ),
+        (
+            ProtocolError::ScalarAboveCurveOrder { scalar: Scalar::R },
+            "SIG_R_ABOVE_ORDER",
+        ),
+        (
+            ProtocolError::ScalarAboveCurveOrder { scalar: Scalar::S },
+            "SIG_S_ABOVE_ORDER",
+        ),
+        (ProtocolError::HighS, "SIG_HIGH_S"),
+        (ProtocolError::Unrecoverable, "SIG_UNRECOVERABLE"),
+        (
+            ProtocolError::WrongSigner {
+                expected: Address::repeat_byte(0x11),
+                recovered: Address::repeat_byte(0x22),
+            },
+            "SIG_WRONG_SIGNER",
+        ),
+    ];
+    for (error, code) in &coded {
+        assert_eq!(error.code(), *code, "{error}");
+    }
+
+    // The published list is exactly the codes the variants produce, in the same order, and every
+    // one of them is distinct: two rejections sharing a code would be indistinguishable to a
+    // client and to the vault.
+    let produced: Vec<&str> = coded.iter().map(|(e, _)| e.code()).collect();
+    assert_eq!(produced, SIGNATURE_ERROR_CODES.to_vec());
+    let mut sorted = produced.clone();
+    sorted.sort_unstable();
+    sorted.dedup();
+    assert_eq!(sorted.len(), produced.len(), "codes must be distinct");
+
+    // Scalar is a Rust detail: the two components differ by code, not by a field Solidity would
+    // have to encode.
+    assert_ne!(
+        ProtocolError::ScalarZero { scalar: Scalar::R }.code(),
+        ProtocolError::ScalarZero { scalar: Scalar::S }.code()
+    );
     Ok(())
 }
 

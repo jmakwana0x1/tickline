@@ -3,6 +3,11 @@
 //! One variant per rejection rule in ADR-0012: the reason a signature was refused is part of the
 //! protocol, because from #67 the same reasons are cross-stack vectors and from Phase 3 the vault
 //! refuses the same inputs for the same reasons.
+//!
+//! **The code is the contract, not the message.** [`ProtocolError::code`] returns a flat, stable
+//! string that Solidity and TypeScript can both produce: Solidity custom errors carry no message,
+//! and a TypeScript client would otherwise invent its own wording. The English text is for humans
+//! reading logs.
 
 use alloy_primitives::Address;
 
@@ -77,3 +82,48 @@ pub enum ProtocolError {
         recovered: Address,
     },
 }
+
+impl ProtocolError {
+    /// The stable code for this rejection, as the cross-stack vectors carry it (#67).
+    ///
+    /// Codes are flat, one per rejection, so [`Scalar`] stays a Rust detail: `SIG_R_ZERO` and
+    /// `SIG_S_ZERO` are separate codes rather than one code with a field, because Solidity would
+    /// otherwise have to encode which component failed. `TicklineTypes.sol` declares one custom
+    /// error per code, and the TypeScript client carries the code on its error.
+    ///
+    /// These strings are protocol surface: changing one is a breaking change for every stack, so
+    /// it takes an ADR.
+    #[must_use]
+    pub const fn code(&self) -> &'static str {
+        match self {
+            Self::SignatureLength { .. } => "SIG_LENGTH",
+            Self::CompactSignature => "SIG_COMPACT",
+            Self::SignatureRecoveryId { .. } => "SIG_RECOVERY_ID",
+            Self::ScalarZero { scalar: Scalar::R } => "SIG_R_ZERO",
+            Self::ScalarZero { scalar: Scalar::S } => "SIG_S_ZERO",
+            Self::ScalarAboveCurveOrder { scalar: Scalar::R } => "SIG_R_ABOVE_ORDER",
+            Self::ScalarAboveCurveOrder { scalar: Scalar::S } => "SIG_S_ABOVE_ORDER",
+            Self::HighS => "SIG_HIGH_S",
+            Self::Unrecoverable => "SIG_UNRECOVERABLE",
+            Self::WrongSigner { .. } => "SIG_WRONG_SIGNER",
+        }
+    }
+}
+
+/// Every code [`ProtocolError::code`] can return.
+///
+/// The list exists so a test can assert that the set is exactly this and that no two variants
+/// share a code. #67 checks the same list against the vector file, and Phase 3 against the
+/// custom errors in `TicklineTypes.sol`.
+pub const SIGNATURE_ERROR_CODES: [&str; 10] = [
+    "SIG_LENGTH",
+    "SIG_COMPACT",
+    "SIG_RECOVERY_ID",
+    "SIG_R_ZERO",
+    "SIG_S_ZERO",
+    "SIG_R_ABOVE_ORDER",
+    "SIG_S_ABOVE_ORDER",
+    "SIG_HIGH_S",
+    "SIG_UNRECOVERABLE",
+    "SIG_WRONG_SIGNER",
+];
