@@ -15,7 +15,8 @@ use alloy_primitives::{Address, B256, U256};
 use common::{address, group, hash, load, section, signature_bytes, text, uint, TestResult};
 use protocol::{
     signature::{CURVE_ORDER, HALF_CURVE_ORDER},
-    ProtocolError, Scalar, Signature, ALL_ERROR_CODES, CODE_PREFIXES, SIGNATURE_ERROR_CODES,
+    CodeFamily, ProtocolError, Reach, Scalar, Signature, CODE_FAMILIES, CODE_PREFIXES,
+    POLICY_ERROR_CODES, SIGNATURE_ERROR_CODES, X402_ERROR_CODES,
 };
 
 /// One valid fixture: the bytes, the digest they were signed over, and who signed.
@@ -355,6 +356,17 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
         (ProtocolError::HighS, "SIG_HIGH_S"),
         (ProtocolError::Unrecoverable, "SIG_UNRECOVERABLE"),
         (
+            ProtocolError::WithdrawDelayWidth { got: 1 << 40 },
+            "X402_WITHDRAW_DELAY_WIDTH",
+        ),
+        (
+            ProtocolError::WithdrawDelayBelowFloor {
+                got: 900,
+                floor: 3600,
+            },
+            "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
+        ),
+        (
             ProtocolError::WrongSigner {
                 expected: Address::repeat_byte(0x11),
                 recovered: Address::repeat_byte(0x22),
@@ -380,7 +392,9 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
             ProtocolError::ScalarAboveCurveOrder { scalar: Scalar::S } => 6,
             ProtocolError::HighS => 7,
             ProtocolError::Unrecoverable => 8,
-            ProtocolError::WrongSigner { .. } => 9,
+            ProtocolError::WithdrawDelayWidth { .. } => 9,
+            ProtocolError::WithdrawDelayBelowFloor { .. } => 10,
+            ProtocolError::WrongSigner { .. } => 11,
         }
     }
     for (index, (error, _)) in coded.iter().enumerate() {
@@ -395,7 +409,23 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
     // one of them is distinct: two rejections sharing a code would be indistinguishable to a
     // client and to the vault.
     let produced: Vec<&str> = coded.iter().map(|(e, _)| e.code()).collect();
-    assert_eq!(produced, SIGNATURE_ERROR_CODES.to_vec());
+
+    // Each family's published list is exactly the codes its variants produce, in the same order.
+    // Grouped by prefix rather than by position, because the families interleave in the enum.
+    for family in CODE_FAMILIES {
+        let mine: Vec<&str> = produced
+            .iter()
+            .copied()
+            .filter(|c| c.starts_with(family.prefix))
+            .collect();
+        assert_eq!(mine, family.codes.to_vec(), "{} list", family.prefix);
+    }
+    assert_eq!(
+        produced.len(),
+        CODE_FAMILIES.iter().map(|f| f.codes.len()).sum::<usize>(),
+        "every produced code belongs to a published family"
+    );
+
     let mut sorted = produced.clone();
     sorted.sort_unstable();
     sorted.dedup();
@@ -416,8 +446,8 @@ fn every_code_is_namespaced_and_globally_unique() -> TestResult {
     // S3 to S5 add RCPT_, MID_ and ENV_ lists to ALL_ERROR_CODES, and this test then covers them
     // without being touched.
     let mut seen: Vec<&str> = Vec::new();
-    for list in ALL_ERROR_CODES {
-        for code in list {
+    for family in CODE_FAMILIES {
+        for code in family.codes {
             let prefixes: Vec<&str> = CODE_PREFIXES
                 .iter()
                 .copied()
@@ -443,9 +473,37 @@ fn every_code_is_namespaced_and_globally_unique() -> TestResult {
 
     assert_eq!(
         CODE_PREFIXES.to_vec(),
-        vec!["SIG_", "RCPT_", "MID_", "ENV_"]
+        vec!["SIG_", "RCPT_", "MID_", "ENV_", "X402_", "POLICY_"]
     );
+
+    // A family is scoped to the stacks that can produce it (ADR-0012, update of 2026-09-24). The
+    // vault never enforces Tickline's withdrawDelay floor, so requiring a Solidity custom error
+    // for a POLICY_ code would fail Phase 3 against a rule nobody intended.
+    let reach = |prefix: &str| {
+        CODE_FAMILIES
+            .iter()
+            .find(|f: &&CodeFamily| f.prefix == prefix)
+            .map(|f| f.reach)
+    };
+    assert_eq!(reach("SIG_"), Some(Reach::EveryStack));
+    assert_eq!(reach("X402_"), Some(Reach::EveryStack));
+    assert_eq!(reach("POLICY_"), Some(Reach::EngineAndClient));
+
+    // Each family's list is reachable by name as well as through the registry, so a family cannot
+    // be published under one name and registered under another.
+    assert_eq!(codes_of("SIG_"), SIGNATURE_ERROR_CODES.to_vec());
+    assert_eq!(codes_of("X402_"), X402_ERROR_CODES.to_vec());
+    assert_eq!(codes_of("POLICY_"), POLICY_ERROR_CODES.to_vec());
     Ok(())
+}
+
+/// The codes a family publishes, looked up by prefix.
+fn codes_of(prefix: &str) -> Vec<&'static str> {
+    CODE_FAMILIES
+        .iter()
+        .find(|f| f.prefix == prefix)
+        .map(|f| f.codes.to_vec())
+        .unwrap_or_default()
 }
 
 #[test]

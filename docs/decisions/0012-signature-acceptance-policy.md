@@ -115,3 +115,43 @@ own error variant with a test that triggers it. `every_rejection_carries_its_sta
 the table above, that the published list is exactly what the variants produce, and that no two
 rejections share a code. From #67 the same cases are vectors that all three stacks run, and from
 Phase 3 the vault runs them too.
+
+## Update, 2026-09-24
+
+Made at Jay's direction on #63. ADR-0001 says accepted ADRs are not edited. This section is added
+below the original, which is left as it was, so the record of what was believed earlier on
+2026-09-24 survives.
+
+**Two more prefixes are reserved: `X402_` and `POLICY_`.** The full list is now `SIG_`, `RCPT_`,
+`MID_`, `ENV_`, `X402_`, `POLICY_`.
+
+They are reserved together because they separate two things that are easy to collapse and
+expensive to confuse:
+
+| Prefix | Means | Example |
+|---|---|---|
+| `X402_` | **malformed as an x402 object.** Any stack, and the escrow itself, would refuse it | `X402_WITHDRAW_DELAY_WIDTH`: a `withdrawDelay` that does not fit `uint40`, so it cannot be the config the contract hashed |
+| `POLICY_` | **a valid object Tickline declines to serve.** The protocol is satisfied; we are not | `POLICY_WITHDRAW_DELAY_BELOW_FLOOR`: the escrow accepts any delay between 15 minutes and 30 days, and the 3600 floor is our decision from #8 |
+
+Calling a policy refusal `X402_` tells a client the payment protocol rejected its channel, which is
+false, and sends it to the wrong place to fix it. Phase 4 fills `POLICY_` further: a channel with a
+pending withdrawal, a fill after the deadline, a fill below one base unit of shares, a cost above
+the client's signed ceiling. None of those fit an existing family either, and by then three stacks
+carry the codes.
+
+**A family is scoped to the stacks that can produce it.** This is new, and it changes what the
+registry asserts:
+
+| Family | Rust | Solidity | TypeScript |
+|---|---|---|---|
+| `SIG_` | yes | yes | yes |
+| `X402_` | yes | yes | yes |
+| `POLICY_` | yes | no | yes |
+
+The vault never enforces the 3600 floor, so no Solidity custom error exists for a `POLICY_` code,
+and requiring one would fail Phase 3 against a rule nobody intended. `RCPT_`, `MID_` and `ENV_`
+declare their reach when they are first used.
+
+The registry test therefore checks reach per family rather than assuming every code is universal,
+and #67's vector file records each family's reach so the Solidity and TypeScript sides know which
+codes they are obliged to carry.

@@ -73,6 +73,22 @@ pub enum ProtocolError {
     #[error("no signer could be recovered from this signature")]
     Unrecoverable,
 
+    /// A `withdrawDelay` that does not fit `uint40`, so it cannot be the config the escrow hashed.
+    #[error("withdrawDelay {got} does not fit uint40")]
+    WithdrawDelayWidth {
+        /// The value that arrived.
+        got: u64,
+    },
+
+    /// A channel the x402 scheme accepts and Tickline declines to serve.
+    #[error("withdrawDelay {got} is below the advertised floor of {floor} seconds")]
+    WithdrawDelayBelowFloor {
+        /// The value that arrived.
+        got: u64,
+        /// The floor Tickline advertises in its 402 challenge (#8).
+        floor: u64,
+    },
+
     /// A signature recovered, but to a different address than the caller required.
     #[error("signature recovers to {recovered}, expected {expected}")]
     WrongSigner {
@@ -105,21 +121,70 @@ impl ProtocolError {
             Self::ScalarAboveCurveOrder { scalar: Scalar::S } => "SIG_S_ABOVE_ORDER",
             Self::HighS => "SIG_HIGH_S",
             Self::Unrecoverable => "SIG_UNRECOVERABLE",
+            Self::WithdrawDelayWidth { .. } => "X402_WITHDRAW_DELAY_WIDTH",
+            Self::WithdrawDelayBelowFloor { .. } => "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
             Self::WrongSigner { .. } => "SIG_WRONG_SIGNER",
         }
     }
 }
 
-/// The reserved code prefix for every signed object family (ADR-0012).
+/// Which stacks must be able to produce a family's codes (ADR-0012, update of 2026-09-24).
 ///
-/// One namespace per family, fixed before the codes cross a stack boundary: retrofitting a
-/// namespace once Solidity and TypeScript both carry the codes would be a breaking change in
-/// three places at once. `SIG_` is signatures (#62); `RCPT_` receipts (#64), `MID_` market ids
-/// (#65) and `ENV_` the 402 envelopes (#66) are reserved and unused so far.
-pub const CODE_PREFIXES: [&str; 4] = ["SIG_", "RCPT_", "MID_", "ENV_"];
+/// A family is scoped to the stacks that can produce it. Requiring a Solidity custom error for a
+/// rejection the vault never makes would fail Phase 3 against a rule nobody intended.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reach {
+    /// Rust, Solidity, and TypeScript. The vault refuses the same input for the same reason, so
+    /// `TicklineTypes.sol` declares a custom error per code (#67).
+    EveryStack,
+    /// The engine and its clients only. The vault never enforces it, so no Solidity error exists.
+    EngineAndClient,
+}
 
-/// Every published code list. S3 to S5 append theirs, and the registry test then covers them.
-pub const ALL_ERROR_CODES: [&[&str]; 1] = [&SIGNATURE_ERROR_CODES];
+/// A namespace of rejection codes, and the stacks obliged to carry them.
+#[derive(Debug, Clone, Copy)]
+pub struct CodeFamily {
+    /// The reserved prefix every code in the family starts with.
+    pub prefix: &'static str,
+    /// Which stacks must produce these codes.
+    pub reach: Reach,
+    /// The codes themselves, in the order the variants produce them.
+    pub codes: &'static [&'static str],
+}
+
+/// Every family that has codes today. S3 to S5 append theirs, and the registry test covers them
+/// without being touched.
+pub const CODE_FAMILIES: [CodeFamily; 3] = [
+    CodeFamily {
+        prefix: "SIG_",
+        reach: Reach::EveryStack,
+        codes: &SIGNATURE_ERROR_CODES,
+    },
+    CodeFamily {
+        prefix: "X402_",
+        reach: Reach::EveryStack,
+        codes: &X402_ERROR_CODES,
+    },
+    CodeFamily {
+        prefix: "POLICY_",
+        reach: Reach::EngineAndClient,
+        codes: &POLICY_ERROR_CODES,
+    },
+];
+
+/// Every reserved prefix, whether or not a family uses it yet (ADR-0012).
+///
+/// Fixed before the codes cross a stack boundary: retrofitting a namespace once Solidity and
+/// TypeScript both carry the codes would be a breaking change in three places at once. `RCPT_`
+/// (#64), `MID_` (#65) and `ENV_` (#66) are reserved and unused so far, and declare their reach
+/// when they are first used.
+pub const CODE_PREFIXES: [&str; 6] = ["SIG_", "RCPT_", "MID_", "ENV_", "X402_", "POLICY_"];
+
+/// Rejections of the x402 wire types: malformed as an x402 object, refused by any stack.
+pub const X402_ERROR_CODES: [&str; 1] = ["X402_WITHDRAW_DELAY_WIDTH"];
+
+/// Rejections that are Tickline declining to serve a valid x402 object.
+pub const POLICY_ERROR_CODES: [&str; 1] = ["POLICY_WITHDRAW_DELAY_BELOW_FLOOR"];
 
 /// Every code [`ProtocolError::code`] can return.
 ///
