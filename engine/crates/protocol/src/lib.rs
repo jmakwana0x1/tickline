@@ -4,8 +4,19 @@
 //! (CLAUDE.md section 2): every voucher field comes from a cited source, and every
 //! hash is proven byte-identical across Rust, Solidity, and TypeScript by
 //! `testdata/vectors/eip712.json`.
+//!
+//! The crate is zero IO and verification only: it never signs, and it holds no key
+//! (ADR-0011, ADR-0012).
 
 #![forbid(unsafe_code)]
+
+pub mod eip712;
+pub mod signature;
+
+mod error;
+
+pub use error::{ProtocolError, Scalar};
+pub use signature::Signature;
 
 /// EIP-712 domain name for every Tickline-owned signed struct.
 pub const DOMAIN_NAME: &str = "Tickline";

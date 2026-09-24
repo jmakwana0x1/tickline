@@ -76,6 +76,20 @@ make_workspace "$ALLOWED" $'thiserror.workspace = true\ntokio = "1"'
 expect "check-crate-boundaries rejects an IO dependency in protocol" fail "$engine"
 make_workspace "$ALLOWED" 'thiserror.workspace = true' 'pub fn now() { let _ = std::time::SystemTime::now(); }'
 expect "check-crate-boundaries rejects a wall-clock read in lmsr" fail "$engine"
+# protocol's allowlist (ADR-0011, #62). Versions are written out rather than inherited from the
+# fixture workspace, so these cases add to the file without touching the cases above.
+P_ALLOWED=$'alloy-primitives = { version = "=1.7.3", default-features = false, features = ["tiny-keccak"] }\nk256 = { version = "0.13", default-features = false, features = ["ecdsa"] }\nserde = "1"\nserde_json = "1"\nbase64 = "0.22"\nthiserror = "2.0"'
+make_workspace "$ALLOWED" "$P_ALLOWED"
+expect "check-crate-boundaries accepts protocol's allowlist" pass "$engine"
+make_workspace "$ALLOWED" "$P_ALLOWED"$'\nregex = "1"'
+expect "check-crate-boundaries rejects an unlisted protocol dependency" fail "$engine"
+make_workspace "$ALLOWED" "$P_ALLOWED"$'\n\n[build-dependencies]\ncc = "1"'
+expect "check-crate-boundaries rejects an unlisted protocol build-dependency" fail "$engine"
+make_workspace "$ALLOWED" $'alloy-primitives = "=1.7.3"\nthiserror = "2.0"'
+expect "check-crate-boundaries rejects alloy-primitives with default features in protocol" fail "$engine"
+make_workspace "$ALLOWED" $'k256 = "0.13"\nthiserror = "2.0"'
+expect "check-crate-boundaries rejects k256 with default features" fail "$engine"
+
 expect "check-crate-boundaries passes on the current tree" pass "$PWD/engine"
 
 (( failures == 0 )) || exit 1

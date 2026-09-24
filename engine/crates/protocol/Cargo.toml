@@ -10,6 +10,8 @@ publish.workspace = true
 [dependencies]
 thiserror.workspace = true
 serde.workspace = true
+# ADR-0011. keccak256 needs a backend, and tiny-keccak is the pure-Rust one.
+alloy-primitives = { workspace = true, features = ["tiny-keccak"] }
 
 [dev-dependencies]
 proptest.workspace = true

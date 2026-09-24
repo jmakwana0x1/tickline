@@ -138,6 +138,7 @@ tickline/
 - A crate may depend only on crates to its left in the list above. `lmsr` depends on nothing in the
   workspace; `protocol` may not depend on `ledger`. Cycles are a build error and a design error.
 - `lmsr` is zero IO. `lmsr` dependencies are limited to `alloy-primitives` (no default features) and `thiserror` (ADR-0008), enforced as an allowlist by `scripts/check-crate-boundaries.sh`.
+- `protocol` dependencies are limited to `alloy-primitives` (no default features, `tiny-keccak`), `k256` (no default features, `ecdsa`), `serde`, `serde_json`, `base64` and `thiserror` (ADR-0011), enforced by the same allowlist. No signer wrapper: ADR-0012 inspects `s` before deciding.
 - `lmsr` and `protocol` are **zero-IO**: no `tokio`, no `sqlx`, no `reqwest`, no clock, no `std::time`.
   This is what makes them exhaustively testable, and it is enforced in CI by a dependency check.
 - Anything generated lives under `testdata/` and is committed. Generators are deterministic; `just
