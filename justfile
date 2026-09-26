@@ -72,6 +72,8 @@ lint:
     @bash scripts/test-check-vectors-committed.sh
     @bash scripts/test-check-vector-secrets.sh
     @bash scripts/check-vector-secrets.sh
+    @bash scripts/test-no-encode-packed.sh
+    @bash scripts/check-no-encode-packed.sh
 
 # Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
 # staged files, so this is the check to run before a push, and after any history rewrite (#72).
