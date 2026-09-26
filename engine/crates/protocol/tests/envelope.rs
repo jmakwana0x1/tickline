@@ -439,6 +439,12 @@ fn validate_enforces_every_rule_and_not_only_the_network() -> TestResult {
         })
     );
 
+    // The largest uint40 is accepted: far above our floor, and a valid width. Without this the
+    // width check reads `>=` just as well as `>`, which is what cargo-mutants found.
+    let mut widest_delay = base.clone();
+    widest_delay.extra.withdraw_delay = 1_099_511_627_775;
+    assert_eq!(widest_delay.validate()?.chain_id(), 84532);
+
     let mut wide_delay = base.clone();
     wide_delay.extra.withdraw_delay = 1_099_511_627_776;
     assert_eq!(

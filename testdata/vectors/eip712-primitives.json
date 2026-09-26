@@ -338,8 +338,16 @@
         "eip155:",
         "eip155:abc",
         ":84532",
-        "eip155:84532:1"
-      ]
+        "eip155:84532:1",
+        "eip155:+5",
+        "eip155: 5",
+        "eip155:5 ",
+        "eip155:0",
+        "EIP155:84532",
+        "eip155:1e3"
+      ],
+      "why_plus_is_listed": "u64::from_str accepts a leading plus, so 'eip155:+5' parses to 5 unless the digits are checked first. cargo-mutants found this by turning the digit check's || into &&, which nothing else noticed.",
+      "why_zero_is_listed": "Chain id zero is a valid decimal and not a chain."
     },
     "payment_required": {
       "why": "What the engine answers an unpaid request with. amount is the per-request ceiling the client turns into maxClaimableAmount, not a price.",
