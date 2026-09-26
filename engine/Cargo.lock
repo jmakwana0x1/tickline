@@ -1419,6 +1419,7 @@ name = "protocol"
 version = "0.0.0"
 dependencies = [
  "alloy-primitives",
+ "base64",
  "k256",
  "proptest",
  "serde",

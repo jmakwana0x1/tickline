@@ -89,6 +89,61 @@ pub enum ProtocolError {
         floor: u64,
     },
 
+    /// A payment header was larger than [`crate::envelope::MAX_HEADER_BYTES`].
+    #[error("payment header is {got} bytes, over the {max} byte limit")]
+    HeaderTooLarge {
+        /// The size that arrived.
+        got: usize,
+        /// The limit.
+        max: usize,
+    },
+
+    /// A payment header was not valid base64.
+    #[error("payment header is not base64")]
+    HeaderNotBase64,
+
+    /// A payment header decoded but was not the JSON it claims to be.
+    #[error("payment header is not the expected JSON: {detail}")]
+    HeaderMalformed {
+        /// What the parser objected to. Formatted, because a caller cannot act on it.
+        detail: String,
+    },
+
+    /// A payment named a scheme this engine does not speak.
+    #[error("scheme '{got}' is not batch-settlement")]
+    SchemeUnknown {
+        /// The value that arrived.
+        got: String,
+    },
+
+    /// A payment payload named a `type` the scheme does not define.
+    #[error("payload type '{got}' is not one of deposit, voucher, refund")]
+    PayloadTypeUnknown {
+        /// The value that arrived.
+        got: String,
+    },
+
+    /// A valid x402 payload type that this endpoint does not serve.
+    #[error("payload type '{got}' is not accepted at this endpoint")]
+    PayloadTypeNotAccepted {
+        /// The type that arrived: `deposit` or `refund`.
+        got: String,
+    },
+
+    /// An amount that was not a `uint128`, the width the escrow gives `maxClaimableAmount`.
+    #[error("amount '{got}' is not a uint128")]
+    AmountNotU128 {
+        /// The value that arrived.
+        got: String,
+    },
+
+    /// A network that was not CAIP-2, or not one we serve.
+    #[error("network must be CAIP-2 eip155:<chainId>, got '{got}'")]
+    NetworkNotCaip2 {
+        /// The value that arrived.
+        got: String,
+    },
+
     /// A signature recovered, but to a different address than the caller required.
     #[error("signature recovers to {recovered}, expected {expected}")]
     WrongSigner {
@@ -123,6 +178,14 @@ impl ProtocolError {
             Self::Unrecoverable => "SIG_UNRECOVERABLE",
             Self::WithdrawDelayWidth { .. } => "X402_WITHDRAW_DELAY_WIDTH",
             Self::WithdrawDelayBelowFloor { .. } => "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
+            Self::HeaderTooLarge { .. } => "ENV_HEADER_TOO_LARGE",
+            Self::HeaderNotBase64 => "ENV_HEADER_NOT_BASE64",
+            Self::HeaderMalformed { .. } => "ENV_HEADER_MALFORMED",
+            Self::SchemeUnknown { .. } => "ENV_SCHEME_UNKNOWN",
+            Self::PayloadTypeUnknown { .. } => "ENV_PAYLOAD_TYPE_UNKNOWN",
+            Self::AmountNotU128 { .. } => "ENV_AMOUNT_NOT_U128",
+            Self::NetworkNotCaip2 { .. } => "ENV_NETWORK_NOT_CAIP2",
+            Self::PayloadTypeNotAccepted { .. } => "POLICY_PAYLOAD_TYPE_NOT_ACCEPTED",
             Self::WrongSigner { .. } => "SIG_WRONG_SIGNER",
         }
     }
@@ -154,7 +217,7 @@ pub struct CodeFamily {
 
 /// Every family that has codes today. S3 to S5 append theirs, and the registry test covers them
 /// without being touched.
-pub const CODE_FAMILIES: [CodeFamily; 3] = [
+pub const CODE_FAMILIES: [CodeFamily; 4] = [
     CodeFamily {
         prefix: "SIG_",
         reach: Reach::EveryStack,
@@ -170,6 +233,11 @@ pub const CODE_FAMILIES: [CodeFamily; 3] = [
         reach: Reach::EngineAndClient,
         codes: &POLICY_ERROR_CODES,
     },
+    CodeFamily {
+        prefix: "ENV_",
+        reach: Reach::EngineAndClient,
+        codes: &ENV_ERROR_CODES,
+    },
 ];
 
 /// Every reserved prefix, whether or not a family uses it yet (ADR-0012).
@@ -183,8 +251,25 @@ pub const CODE_PREFIXES: [&str; 6] = ["SIG_", "RCPT_", "MID_", "ENV_", "X402_", 
 /// Rejections of the x402 wire types: malformed as an x402 object, refused by any stack.
 pub const X402_ERROR_CODES: [&str; 1] = ["X402_WITHDRAW_DELAY_WIDTH"];
 
+/// Rejections of the 402 envelopes: a header or a challenge that is not the wire format.
+///
+/// `EngineAndClient` reach, not `EveryStack`: the vault never parses an HTTP header, so no
+/// Solidity custom error exists for any of these (ADR-0012, update of 2026-09-24).
+pub const ENV_ERROR_CODES: [&str; 7] = [
+    "ENV_HEADER_TOO_LARGE",
+    "ENV_HEADER_NOT_BASE64",
+    "ENV_HEADER_MALFORMED",
+    "ENV_SCHEME_UNKNOWN",
+    "ENV_PAYLOAD_TYPE_UNKNOWN",
+    "ENV_AMOUNT_NOT_U128",
+    "ENV_NETWORK_NOT_CAIP2",
+];
+
 /// Rejections that are Tickline declining to serve a valid x402 object.
-pub const POLICY_ERROR_CODES: [&str; 1] = ["POLICY_WITHDRAW_DELAY_BELOW_FLOOR"];
+pub const POLICY_ERROR_CODES: [&str; 2] = [
+    "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
+    "POLICY_PAYLOAD_TYPE_NOT_ACCEPTED",
+];
 
 /// Every code [`ProtocolError::code`] can return.
 ///

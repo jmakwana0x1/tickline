@@ -313,15 +313,62 @@ toward clients is unchanged, which is what lets the official TS client work as-i
 `extra.receiverAuthorizer`, `extra.withdrawDelay`, `extra.name`, `extra.version` are **required**;
 `assetTransferMethod`, `minDeposit`, `channelState`, `voucherState` are optional.
 
-### Payment payload
+### The 402 body is `accepts[]`, not a single requirement
 
-Three types: `deposit`, `voucher`, `refund`. Each carries the full `channelConfig` plus
-`voucher: { channelId, maxClaimableAmount, signature }`.
+This section summarized the shapes until 2026-09-26 and the summary hid a mistake: the block above
+is **one entry of `accepts`**, not the body. Jay caught it on #66. Quoted from
+`scheme_batch_settlement_evm.md`, the body is
 
-### Payment response
+```json
+{
+  "x402Version": 2,
+  "error": "invalid_batch_settlement_evm_cumulative_amount_mismatch",
+  "accepts": [ { "scheme": "batch-settlement", "extra": { "…": "…" } } ]
+}
+```
 
-Voucher-only response has `transaction: ""` and `amount: ""`, with the real figure in
-`extra.chargedAmount` and a snapshot in `extra.channelState`.
+so the type is `PaymentRequired { x402Version, accepts, error }` with the entry named
+`PaymentRequirements`. The official TypeScript client reads `accepts`.
+
+The spec's corrective example shows an entry carrying only `scheme` and `extra`. That is the
+example eliding, not the entry being partial: every `accepted` block elsewhere in the same document
+carries `scheme`, `network`, `amount`, `asset`, `payTo`, `maxTimeoutSeconds` and `extra`, so our
+types require them.
+
+### Payment payload, quoted
+
+Three types, `deposit`, `voucher` and `refund`, chosen by channel state. Each **echoes the
+requirements it is answering** in `accepted`, which the summary here used to omit:
+
+```json
+{
+  "x402Version": 2,
+  "accepted": { "scheme": "…", "network": "…", "amount": "…", "asset": "…",
+                "payTo": "…", "maxTimeoutSeconds": 3600, "extra": { "…": "…" } },
+  "payload": {
+    "type": "voucher",
+    "channelConfig": { "payer": "…", "payerAuthorizer": "…", "receiver": "…",
+                       "receiverAuthorizer": "…", "token": "…", "withdrawDelay": 900,
+                       "salt": "0x…" },
+    "voucher": { "channelId": "0x…", "maxClaimableAmount": "5000", "signature": "0x…" }
+  }
+}
+```
+
+`channelConfig` here is the EIP-712 struct whose hash **is** the `channelId`, which is why an
+unknown field in it is refused rather than ignored (ADR-0014).
+
+### Payment response, quoted
+
+```json
+{
+  "success": true, "transaction": "", "network": "eip155:8453", "payer": "0x…", "amount": "",
+  "extra": { "chargedAmount": "700", "channelState": { "…": "…" } }
+}
+```
+
+A voucher-only response has `transaction: ""` and `amount: ""`, with the real figure in
+`extra.chargedAmount`.
 
 **Critical client rule**, and a good model for our agents:
 
@@ -335,6 +382,22 @@ On cumulative mismatch the server returns `accepts[].extra.channelState` **and**
 `accepts[].extra.voucherState` (`signedMaxClaimable` + `signature`) so the client can verify its
 own prior signature before adopting the server's number. Tickline's API must implement this path,
 because it is how a desynced agent recovers.
+
+`channelState` is `{ channelId, balance, totalClaimed, withdrawRequestedAt, refundNonce,
+chargedCumulativeAmount }`.
+
+### The error vocabulary is the spec's, not ours
+
+The scheme defines about fifty `invalid_batch_settlement_evm_*` codes, and `PaymentRequired.error`
+carries one of them. Ours (`SIG_`, `X402_`, `POLICY_`, `ENV_`, ADR-0012) are internal: they name why
+*we* refused something, across three stacks. The two vocabularies meet at the HTTP boundary, and
+mapping one to the other is Phase 4's job, when the API starts emitting them. The one S5 needs is
+`invalid_batch_settlement_evm_cumulative_amount_mismatch`, the corrective 402.
+
+Five verification rules the scheme requires of a verifier, which Phase 4 must satisfy per voucher:
+the config's chain-bound EIP-712 hash equals the claimed channel id; the channel token matches
+`asset`; the channel receiver equals `payTo`; the channel receiver authorizer equals
+`extra.receiverAuthorizer`; the channel withdraw delay equals `extra.withdrawDelay`.
 
 ---
 
