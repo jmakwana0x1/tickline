@@ -1,6 +1,6 @@
 //! ADR-0012, one named test per rule (issue #62).
 //!
-//! **Provenance.** The valid signatures come from `testdata/vectors/eip712-primitives.json`,
+//! **Provenance.** The valid signatures come from `testdata/vectors/eip712.json`,
 //! produced with `cast wallet sign --no-hash` from anvil's first two accounts, whose keys are
 //! public test material and are deliberately not committed. Everything invalid is derived here
 //! from those two, so each rejection case is an accepted signature with exactly one thing

@@ -2,7 +2,7 @@
 //!
 //! **No field here is invented.** Every type string is the one cited in §1 and verified against
 //! the deployed escrow's own type hash getters, and every fixture in
-//! `testdata/vectors/eip712-primitives.json` was read from the deployment rather than derived
+//! `testdata/vectors/eip712.json` was read from the deployment rather than derived
 //! from our reading of the spec.
 //!
 //! The types are plain data with one hashing method each. Nothing here decides anything: the

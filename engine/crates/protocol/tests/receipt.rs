@@ -1,6 +1,6 @@
 //! `PositionReceipt` against values computed outside this crate (issue #64).
 //!
-//! **Provenance.** Every expected value comes from `testdata/vectors/eip712-primitives.json`,
+//! **Provenance.** Every expected value comes from `testdata/vectors/eip712.json`,
 //! produced with foundry `cast` 1.8.1 on 2026-09-24. The Tickline domain separator it uses is the
 //! one S1 already pinned, recomputed and found identical, so the receipt vectors and the
 //! primitive vectors cannot drift apart.
@@ -15,7 +15,9 @@
 mod common;
 
 use alloy_primitives::{Address, B256};
-use common::{address, group, hash, load, number, section, signature_bytes, text, TestResult};
+use common::{
+    address, group, hash, integer, load, number, section, signature_bytes, text, TestResult,
+};
 use protocol::{
     eip712::{type_hash, Domain},
     receipt::{PositionReceipt, POSITION_RECEIPT_TYPE},
@@ -42,7 +44,8 @@ fn receipt_from(case: &serde_json::Value) -> TestResult<PositionReceipt> {
         no_shares: amount(case, "no_shares")?,
         cost_paid: amount(case, "cost_paid")?,
         fees_paid: amount(case, "fees_paid")?,
-        nonce: number(case, "nonce")?,
+        // A decimal string in the fixture: u64::MAX is not representable as a JSON number.
+        nonce: integer(case, "nonce")?,
         epoch: u32::try_from(number(case, "epoch")?)?,
     })
 }

@@ -140,12 +140,19 @@ single-element array hides an ordering or concatenation mistake:
 
 | Value | Read from the contract |
 |---|---|
-| `getChannelId` for the fixture config | `0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab` |
-| `getVoucherDigest(channelId, 1000000)` | `0x0d64a8e669f88cd5e7d086129c5a8c02760ccb5f14d2f8c41496bab83e4e9cea` |
-| `getClaimBatchDigest` over two entries | `0xca9f200d7e8c61c6c37fafdbcf046e8c258d7b6e17c0e72b425ea768bcf62a81` |
+| `getChannelId` for the fixture config | `0xbb834cd9eaade7daf8a638d72a31cb799f2e139574723db7721669447db5ca80` |
+| `getVoucherDigest(channelId, 1000000)` | `0x99af2f50ec4be88326d29152073496c732d686e122f0664ba7149f232ba0f8ae` |
+| `getClaimBatchDigest` over two entries | `0x364fdf2c3f58368cde76cbb9df9befa41e75435df7ff4383a06c2f988d438e05` |
 
-Each equals what `engine/crates/protocol` computes, and the fixtures are in
-`testdata/vectors/eip712-primitives.json` with the getter each came from.
+Each equals what `engine/crates/protocol` computes and what the official SDK computes, and the
+fixtures are in `testdata/vectors/eip712.json` with the getter each came from.
+
+**An earlier version of this table read `0x5bc300d3…`, `0x0d64a8e6…` and `0xca9f200d…`.** Those were
+genuine contract reads, over a config whose `payer` and `receiver` were **swapped**: the operator
+paid and the agent received. The contract confirmed them happily, because a getter hashes the input
+it is given and has no opinion on whether the input makes sense. Three implementations then agreed
+with each other on a channel pointing the wrong way. The values above are the same digests over the
+correct direction, and `CLAUDE.md` §5 now carries the rule that came out of it.
 
 Reproduce with:
 

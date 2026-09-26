@@ -144,6 +144,8 @@ vectors-lmsr:
 vectors-eip712:
     pnpm --filter @tickline/agents run vectors
     @bash scripts/check-vectors-committed.sh testdata/vectors/eip712.json
+    # Last, so a key-ish field fails at generation rather than two steps downstream in lint (#67).
+    @bash scripts/check-vector-secrets.sh
 
 slither:
     cd {{contracts}} && slither . --config-file slither.config.json

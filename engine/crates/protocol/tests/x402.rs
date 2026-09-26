@@ -1,6 +1,6 @@
 //! The x402 batch-settlement types, against the deployed escrow (issue #63).
 //!
-//! **Provenance.** Every expected value in `testdata/vectors/eip712-primitives.json` was read
+//! **Provenance.** Every expected value in `testdata/vectors/eip712.json` was read
 //! from `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` on Base Sepolia on 2026-09-24, through the
 //! getter named beside it, or computed and then confirmed against one. Nothing here is checked
 //! against our own reading of the spec. #67 moves these into the generated cross-stack vectors
@@ -110,6 +110,41 @@ fn the_x402_domain_is_the_escrows_own() -> TestResult {
         domain.separator(),
         "our domain is not the escrow's"
     );
+    Ok(())
+}
+
+#[test]
+fn the_agent_pays_and_the_operator_receives() -> TestResult {
+    // A semantic assertion, not another digest. `getChannelId` hashes whatever config it is handed
+    // and would confirm a reversed channel exactly as happily, so three implementations agreeing
+    // proves the encoding and says nothing about the direction (CLAUDE.md §5). An earlier fixture
+    // had these swapped and every digest in the file agreed with itself.
+    let vectors = load()?;
+    let roles = section(&vectors, "roles")?;
+    let operator = address(roles, "operator")?;
+    let agent = address(roles, "agent")?;
+    assert_ne!(operator, agent, "one account cannot hold both roles");
+
+    for case in group(section(&vectors, "x402")?, "channels")? {
+        let config = config_from(case)?;
+        let name = text(case, "name")?;
+        assert_eq!(config.payer, agent, "the agent pays on {name}");
+        assert_eq!(
+            config.payer_authorizer, agent,
+            "the agent signs vouchers on {name}"
+        );
+        assert_eq!(config.receiver, operator, "the operator receives on {name}");
+        assert_eq!(
+            config.receiver_authorizer, operator,
+            "the operator claims on {name}"
+        );
+    }
+
+    // And the receipt is signed by the operator, not by the payer: the two roles sign different
+    // objects, which is what makes a receipt evidence against the operator (I12).
+    let receipt = section(&vectors, "receipt")?;
+    assert_eq!(address(receipt, "operator")?, operator);
+    assert_eq!(address(section(receipt, "typical")?, "agent")?, agent);
     Ok(())
 }
 

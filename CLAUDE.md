@@ -221,6 +221,15 @@ times so far: the `s > n/2` boundary, the rendered error messages, and `UINT40_M
 largest **accepted** value too, not only the first rejected one: that is what says the boundary
 sits where you think rather than one below it.
 
+**A value confirmed by the contract is confirmed as an encoding of the input you gave it, never as
+the right input.** `getChannelId` hashes the config it is handed, and it will confirm a channel whose
+payer and receiver are swapped exactly as happily as a correct one. Three implementations agreeing
+is then one confirmation repeated three times over an input nobody checked. So every fixture that
+encodes roles, directions, or sides carries a **semantic** assertion naming the parties, and the
+behaviour is proven where it is enforced: the escrow lets only `payer` withdraw and only `receiver`
+claim, so a reversed-role test cannot pass. Same family as the rule above: a check that cannot see
+the mistake it is meant to catch.
+
 **Local toolchain.** `just doctor` checks every tool and prints the install command for what is
 missing. `scripts/dev-setup.sh` installs the lot on a fresh Linux/WSL box.
 

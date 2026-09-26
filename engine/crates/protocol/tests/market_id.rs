@@ -1,6 +1,6 @@
 //! `MarketId`, against values computed outside this crate (issue #65, ADR-0013).
 //!
-//! **Provenance.** `testdata/vectors/eip712-primitives.json`, computed with foundry `cast` 1.8.1 on
+//! **Provenance.** `testdata/vectors/eip712.json`, computed with foundry `cast` 1.8.1 on
 //! 2026-09-26. The two domain variants are the reason D3 exists, so they are committed values and
 //! not merely inequalities: identical market parameters under a different chain id or a different
 //! vault must produce the ids recorded there.
