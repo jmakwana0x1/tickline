@@ -46,11 +46,17 @@ fn market_id_tag_matches_committed_string() -> TestResult {
     // The tag is the string as a bytes32 literal, right-padded, so a preimage dump reads as text.
     let text_form = text(fixture, "as_string")?;
     assert_eq!(text_form, "Tickline MarketId v1");
-    assert_eq!(text_form.len(), 20, "20 bytes, so nothing is truncated into 32");
+    assert_eq!(
+        text_form.len(),
+        20,
+        "20 bytes, so nothing is truncated into 32"
+    );
     let bytes = MARKET_ID_TAG.as_slice();
     assert_eq!(bytes.get(..text_form.len()), Some(text_form.as_bytes()));
     assert!(
-        bytes.get(text_form.len()..).is_some_and(|rest| rest.iter().all(|b| *b == 0)),
+        bytes
+            .get(text_form.len()..)
+            .is_some_and(|rest| rest.iter().all(|b| *b == 0)),
         "right-padded with zeros"
     );
     Ok(())
@@ -81,7 +87,10 @@ fn market_id_changes_with_chain_id() -> TestResult {
     let elsewhere = params.market_id(number(case, "chain_id")?, address(case, "vault")?);
 
     assert_eq!(elsewhere, hash(case, "market_id")?);
-    assert_ne!(elsewhere, mine, "the same market on another chain is another market");
+    assert_ne!(
+        elsewhere, mine,
+        "the same market on another chain is another market"
+    );
     Ok(())
 }
 
@@ -96,7 +105,10 @@ fn market_id_changes_with_vault() -> TestResult {
     let elsewhere = params.market_id(number(case, "chain_id")?, address(case, "vault")?);
 
     assert_eq!(elsewhere, hash(case, "market_id")?);
-    assert_ne!(elsewhere, mine, "a redeployed vault must not inherit the old market ids");
+    assert_ne!(
+        elsewhere, mine,
+        "a redeployed vault must not inherit the old market ids"
+    );
     Ok(())
 }
 
@@ -111,22 +123,62 @@ fn market_id_changes_when_any_field_changes() -> TestResult {
 
     // Ten fields: the eight in MarketParams plus the chain and the vault the id is bound to.
     let variants: [(&str, B256); 10] = [
-        ("creator", MarketParams { creator: Address::ZERO, ..base }.market_id(chain_id, vault)),
-        ("templateId", MarketParams { template_id: B256::ZERO, ..base }.market_id(chain_id, vault)),
+        (
+            "creator",
+            MarketParams {
+                creator: Address::ZERO,
+                ..base
+            }
+            .market_id(chain_id, vault),
+        ),
+        (
+            "templateId",
+            MarketParams {
+                template_id: B256::ZERO,
+                ..base
+            }
+            .market_id(chain_id, vault),
+        ),
         (
             "templateParamsHash",
-            MarketParams { template_params_hash: B256::ZERO, ..base }.market_id(chain_id, vault),
+            MarketParams {
+                template_params_hash: B256::ZERO,
+                ..base
+            }
+            .market_id(chain_id, vault),
         ),
         (
             "deadline",
-            MarketParams { deadline: base.deadline + 1, ..base }.market_id(chain_id, vault),
+            MarketParams {
+                deadline: base.deadline + 1,
+                ..base
+            }
+            .market_id(chain_id, vault),
         ),
-        ("b", MarketParams { b: base.b + 1, ..base }.market_id(chain_id, vault)),
+        (
+            "b",
+            MarketParams {
+                b: base.b + 1,
+                ..base
+            }
+            .market_id(chain_id, vault),
+        ),
         (
             "epochLength",
-            MarketParams { epoch_length: base.epoch_length + 1, ..base }.market_id(chain_id, vault),
+            MarketParams {
+                epoch_length: base.epoch_length + 1,
+                ..base
+            }
+            .market_id(chain_id, vault),
         ),
-        ("salt", MarketParams { salt: B256::ZERO, ..base }.market_id(chain_id, vault)),
+        (
+            "salt",
+            MarketParams {
+                salt: B256::ZERO,
+                ..base
+            }
+            .market_id(chain_id, vault),
+        ),
         ("chainId", base.market_id(chain_id + 1, vault)),
         ("vault", base.market_id(chain_id, Address::ZERO)),
         ("nothing", original),
@@ -139,7 +191,10 @@ fn market_id_changes_when_any_field_changes() -> TestResult {
             continue;
         }
         assert_ne!(id, original, "changing {field} must change the id");
-        assert!(!seen.contains(&id), "{field} collides with an earlier variant");
+        assert!(
+            !seen.contains(&id),
+            "{field} collides with an earlier variant"
+        );
         seen.push(id);
     }
     assert_eq!(seen.len(), 9, "nine distinct single-field changes");
@@ -152,7 +207,10 @@ fn template_params_hash_for_the_pyth_threshold_template() -> TestResult {
     let fixture = section(market_section(&vectors)?, "template")?;
 
     assert_eq!(PYTH_THRESHOLD_TEMPLATE, text(fixture, "name")?);
-    assert_eq!(template_id(PYTH_THRESHOLD_TEMPLATE), hash(fixture, "template_id")?);
+    assert_eq!(
+        template_id(PYTH_THRESHOLD_TEMPLATE),
+        hash(fixture, "template_id")?
+    );
 
     let price_id = hash(fixture, "price_id")?;
     let threshold = text(fixture, "threshold")?.parse::<i64>()?;
@@ -164,9 +222,18 @@ fn template_params_hash_for_the_pyth_threshold_template() -> TestResult {
     // Resolution is machine-only (ADR-0005), so every parameter the rule reads is in the hash:
     // change the feed, the threshold, or the side, and it is a different market.
     let base = pyth_threshold_params_hash(price_id, threshold, Direction::Above);
-    assert_ne!(pyth_threshold_params_hash(B256::ZERO, threshold, Direction::Above), base);
-    assert_ne!(pyth_threshold_params_hash(price_id, threshold + 1, Direction::Above), base);
-    assert_ne!(pyth_threshold_params_hash(price_id, threshold, Direction::Below), base);
+    assert_ne!(
+        pyth_threshold_params_hash(B256::ZERO, threshold, Direction::Above),
+        base
+    );
+    assert_ne!(
+        pyth_threshold_params_hash(price_id, threshold + 1, Direction::Above),
+        base
+    );
+    assert_ne!(
+        pyth_threshold_params_hash(price_id, threshold, Direction::Below),
+        base
+    );
     Ok(())
 }
 
@@ -180,7 +247,10 @@ fn a_negative_threshold_is_encoded_as_a_signed_int64() -> TestResult {
     let negative = pyth_threshold_params_hash(price_id, -1, Direction::Above);
     let positive = pyth_threshold_params_hash(price_id, 1, Direction::Above);
     assert_ne!(negative, positive);
-    assert_ne!(negative, pyth_threshold_params_hash(price_id, 0, Direction::Above));
+    assert_ne!(
+        negative,
+        pyth_threshold_params_hash(price_id, 0, Direction::Above)
+    );
     Ok(())
 }
 
