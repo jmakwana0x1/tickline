@@ -320,7 +320,7 @@
     ]
   },
   "envelope": {
-    "note": "The x402 V2 wire format toward clients, from docs/spec-notes.md section 3. Tickline runs no facilitator (Q6), so the engine produces and consumes these itself, but the format is the spec's so the official TS client works unchanged.",
+    "note": "The x402 V2 wire format, quoted from the scheme spec rather than summarized (docs/spec-notes.md section 3). The body is accepts[], not one requirement: Jay caught that on #66 and the spec confirms it.",
     "x402_version": 2,
     "headers": {
       "request": "PAYMENT-SIGNATURE",
@@ -341,7 +341,7 @@
         "eip155:84532:1"
       ]
     },
-    "challenge": {
+    "payment_required": {
       "why": "What the engine answers an unpaid request with. amount is the per-request ceiling the client turns into maxClaimableAmount, not a price.",
       "required_extra": [
         "receiverAuthorizer",
@@ -355,23 +355,163 @@
         "channelState",
         "voucherState"
       ],
-      "token_domain_note": "extra.name and extra.version are the TOKEN's EIP-3009 domain, USDC and 2 here. They are NOT the x402 domain, which is 'x402 Batch Settlement' version 1. A deposit signature verifies against the wrong domain if the two are confused.",
-      "body": {
-        "scheme": "batch-settlement",
-        "network": "eip155:84532",
-        "amount": "100000",
-        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-        "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-        "maxTimeoutSeconds": 3600,
-        "extra": {
-          "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
-          "withdrawDelay": 3600,
-          "name": "USDC",
-          "version": "2",
-          "minDeposit": "1000000"
-        }
+      "token_domain_note": "extra.name and extra.version are the TOKEN's EIP-3009 domain, USDC and 2 here. They are NOT the x402 domain, 'x402 Batch Settlement' version 1. A deposit signature verifies against nothing if the two are confused.",
+      "plain": {
+        "body": {
+          "x402Version": 2,
+          "accepts": [
+            {
+              "scheme": "batch-settlement",
+              "network": "eip155:84532",
+              "amount": "100000",
+              "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+              "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "maxTimeoutSeconds": 3600,
+              "extra": {
+                "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+                "withdrawDelay": 3600,
+                "name": "USDC",
+                "version": "2",
+                "minDeposit": "1000000"
+              }
+            }
+          ]
+        },
+        "json": "{\"x402Version\":2,\"accepts\":[{\"scheme\":\"batch-settlement\",\"network\":\"eip155:84532\",\"amount\":\"100000\",\"asset\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"payTo\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"maxTimeoutSeconds\":3600,\"extra\":{\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"withdrawDelay\":3600,\"name\":\"USDC\",\"version\":\"2\",\"minDeposit\":\"1000000\"}}]}"
       },
-      "json": "{\"scheme\":\"batch-settlement\",\"network\":\"eip155:84532\",\"amount\":\"100000\",\"asset\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"payTo\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"maxTimeoutSeconds\":3600,\"extra\":{\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"withdrawDelay\":3600,\"name\":\"USDC\",\"version\":\"2\",\"minDeposit\":\"1000000\"}}"
+      "corrective": {
+        "why": "The same body shape with error set and channelState and voucherState in the entry's extra, which is what makes a corrective 402 a body rather than a special case. The spec's own example elides the other required keys of the entry; ours carries them.",
+        "error": "invalid_batch_settlement_evm_cumulative_amount_mismatch",
+        "body": {
+          "x402Version": 2,
+          "error": "invalid_batch_settlement_evm_cumulative_amount_mismatch",
+          "accepts": [
+            {
+              "scheme": "batch-settlement",
+              "network": "eip155:84532",
+              "amount": "100000",
+              "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+              "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "maxTimeoutSeconds": 3600,
+              "extra": {
+                "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+                "withdrawDelay": 3600,
+                "name": "USDC",
+                "version": "2",
+                "channelState": {
+                  "channelId": "0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab",
+                  "balance": "100000",
+                  "totalClaimed": "500",
+                  "withdrawRequestedAt": 0,
+                  "refundNonce": "1",
+                  "chargedCumulativeAmount": "3200"
+                },
+                "voucherState": {
+                  "signedMaxClaimable": "3200",
+                  "signature": "0xd4e1c8709ed622abf47ee26c70236431f7c011543ba59bd4120d5149182e2d7c06ded76f1fe4372dbf96f2f59a141b838ff8f3a0f83519d09d3d59fb4b7e61321b"
+                }
+              }
+            }
+          ]
+        },
+        "json": "{\"x402Version\":2,\"error\":\"invalid_batch_settlement_evm_cumulative_amount_mismatch\",\"accepts\":[{\"scheme\":\"batch-settlement\",\"network\":\"eip155:84532\",\"amount\":\"100000\",\"asset\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"payTo\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"maxTimeoutSeconds\":3600,\"extra\":{\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"withdrawDelay\":3600,\"name\":\"USDC\",\"version\":\"2\",\"channelState\":{\"channelId\":\"0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab\",\"balance\":\"100000\",\"totalClaimed\":\"500\",\"withdrawRequestedAt\":0,\"refundNonce\":\"1\",\"chargedCumulativeAmount\":\"3200\"},\"voucherState\":{\"signedMaxClaimable\":\"3200\",\"signature\":\"0xd4e1c8709ed622abf47ee26c70236431f7c011543ba59bd4120d5149182e2d7c06ded76f1fe4372dbf96f2f59a141b838ff8f3a0f83519d09d3d59fb4b7e61321b\"}}}]}"
+      }
+    },
+    "payment_payload": {
+      "why": "What a client sends in PAYMENT-SIGNATURE. It echoes the requirements it answers in `accepted`, so a server can check the client paid for what was advertised.",
+      "voucher": {
+        "body": {
+          "x402Version": 2,
+          "accepted": {
+            "scheme": "batch-settlement",
+            "network": "eip155:84532",
+            "amount": "100000",
+            "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "maxTimeoutSeconds": 3600,
+            "extra": {
+              "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "withdrawDelay": 3600,
+              "name": "USDC",
+              "version": "2",
+              "minDeposit": "1000000"
+            }
+          },
+          "payload": {
+            "type": "voucher",
+            "channelConfig": {
+              "payer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+              "payerAuthorizer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+              "receiver": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+              "token": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+              "withdrawDelay": 3600,
+              "salt": "0x0000000000000000000000000000000000000000000000000000000000000001"
+            },
+            "voucher": {
+              "channelId": "0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab",
+              "maxClaimableAmount": "1000000",
+              "signature": "0xd4e1c8709ed622abf47ee26c70236431f7c011543ba59bd4120d5149182e2d7c06ded76f1fe4372dbf96f2f59a141b838ff8f3a0f83519d09d3d59fb4b7e61321b"
+            }
+          }
+        },
+        "json": "{\"x402Version\":2,\"accepted\":{\"scheme\":\"batch-settlement\",\"network\":\"eip155:84532\",\"amount\":\"100000\",\"asset\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"payTo\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"maxTimeoutSeconds\":3600,\"extra\":{\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"withdrawDelay\":3600,\"name\":\"USDC\",\"version\":\"2\",\"minDeposit\":\"1000000\"}},\"payload\":{\"type\":\"voucher\",\"channelConfig\":{\"payer\":\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\",\"payerAuthorizer\":\"0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266\",\"receiver\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"token\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"withdrawDelay\":3600,\"salt\":\"0x0000000000000000000000000000000000000000000000000000000000000001\"},\"voucher\":{\"channelId\":\"0x5bc300d3a7e3ae87ac56379e964001d3f03d366f76fe8b4347a95f5e02bdbbab\",\"maxClaimableAmount\":\"1000000\",\"signature\":\"0xd4e1c8709ed622abf47ee26c70236431f7c011543ba59bd4120d5149182e2d7c06ded76f1fe4372dbf96f2f59a141b838ff8f3a0f83519d09d3d59fb4b7e61321b\"}}}"
+      },
+      "types": {
+        "accepted": [
+          "voucher"
+        ],
+        "declined": [
+          "deposit",
+          "refund"
+        ],
+        "unknown": [
+          "claim",
+          "settle",
+          "Voucher",
+          "",
+          "voucher "
+        ]
+      }
+    },
+    "strictness": {
+      "rule": "Leniency is allowed exactly where the bytes never enter a hash preimage and never enter state. extra qualifies. Nothing else does. (ADR-0014)",
+      "strict_objects": [
+        "PaymentRequired",
+        "PaymentRequirements",
+        "PaymentPayload",
+        "Payload",
+        "channelConfig",
+        "voucher"
+      ],
+      "lenient_objects": [
+        "extra",
+        "channelState",
+        "voucherState"
+      ],
+      "why_channel_config_matters": "channelConfig is the EIP-712 struct whose hash IS the channelId. An unknown field there means the client signed a different type string, so ignoring it yields a channelId over seven fields while they signed eight, and the failure surfaces as SIG_WRONG_SIGNER: an error that sends them to look at their key when the problem is their payload."
+    },
+    "amounts": {
+      "note": "amount is a decimal string on the wire and becomes maxClaimableAmount, which the escrow gives uint128. The ceiling is written out rather than computed (CLAUDE.md section 5).",
+      "u128_max": "340282366920938463463374607431768211455",
+      "accepted": [
+        "0",
+        "1",
+        "100000",
+        "340282366920938463463374607431768211455"
+      ],
+      "rejected": [
+        "",
+        "340282366920938463463374607431768211456",
+        "-1",
+        "+1",
+        " 1",
+        "1 ",
+        "1e6",
+        "0x10",
+        "1_000",
+        "abc"
+      ]
     }
   }
 }

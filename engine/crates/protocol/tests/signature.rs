@@ -381,6 +381,30 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
             "ENV_HEADER_MALFORMED",
         ),
         (
+            ProtocolError::SchemeUnknown {
+                got: "upto".to_owned(),
+            },
+            "ENV_SCHEME_UNKNOWN",
+        ),
+        (
+            ProtocolError::PayloadTypeUnknown {
+                got: "claim".to_owned(),
+            },
+            "ENV_PAYLOAD_TYPE_UNKNOWN",
+        ),
+        (
+            ProtocolError::PayloadTypeNotAccepted {
+                got: "deposit".to_owned(),
+            },
+            "POLICY_PAYLOAD_TYPE_NOT_ACCEPTED",
+        ),
+        (
+            ProtocolError::AmountNotU128 {
+                got: "1e6".to_owned(),
+            },
+            "ENV_AMOUNT_NOT_U128",
+        ),
+        (
             ProtocolError::NetworkNotCaip2 {
                 got: "base-sepolia".to_owned(),
             },
@@ -417,8 +441,12 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
             ProtocolError::HeaderTooLarge { .. } => 11,
             ProtocolError::HeaderNotBase64 => 12,
             ProtocolError::HeaderMalformed { .. } => 13,
-            ProtocolError::NetworkNotCaip2 { .. } => 14,
-            ProtocolError::WrongSigner { .. } => 15,
+            ProtocolError::SchemeUnknown { .. } => 14,
+            ProtocolError::PayloadTypeUnknown { .. } => 15,
+            ProtocolError::PayloadTypeNotAccepted { .. } => 16,
+            ProtocolError::AmountNotU128 { .. } => 17,
+            ProtocolError::NetworkNotCaip2 { .. } => 18,
+            ProtocolError::WrongSigner { .. } => 19,
         }
     }
     for (index, (error, _)) in coded.iter().enumerate() {

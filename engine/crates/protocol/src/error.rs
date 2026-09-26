@@ -109,6 +109,34 @@ pub enum ProtocolError {
         detail: String,
     },
 
+    /// A payment named a scheme this engine does not speak.
+    #[error("scheme '{got}' is not batch-settlement")]
+    SchemeUnknown {
+        /// The value that arrived.
+        got: String,
+    },
+
+    /// A payment payload named a `type` the scheme does not define.
+    #[error("payload type '{got}' is not one of deposit, voucher, refund")]
+    PayloadTypeUnknown {
+        /// The value that arrived.
+        got: String,
+    },
+
+    /// A valid x402 payload type that this endpoint does not serve.
+    #[error("payload type '{got}' is not accepted at this endpoint")]
+    PayloadTypeNotAccepted {
+        /// The type that arrived: `deposit` or `refund`.
+        got: String,
+    },
+
+    /// An amount that was not a `uint128`, the width the escrow gives `maxClaimableAmount`.
+    #[error("amount '{got}' is not a uint128")]
+    AmountNotU128 {
+        /// The value that arrived.
+        got: String,
+    },
+
     /// A network that was not CAIP-2, or not one we serve.
     #[error("network must be CAIP-2 eip155:<chainId>, got '{got}'")]
     NetworkNotCaip2 {
@@ -153,7 +181,11 @@ impl ProtocolError {
             Self::HeaderTooLarge { .. } => "ENV_HEADER_TOO_LARGE",
             Self::HeaderNotBase64 => "ENV_HEADER_NOT_BASE64",
             Self::HeaderMalformed { .. } => "ENV_HEADER_MALFORMED",
+            Self::SchemeUnknown { .. } => "ENV_SCHEME_UNKNOWN",
+            Self::PayloadTypeUnknown { .. } => "ENV_PAYLOAD_TYPE_UNKNOWN",
+            Self::AmountNotU128 { .. } => "ENV_AMOUNT_NOT_U128",
             Self::NetworkNotCaip2 { .. } => "ENV_NETWORK_NOT_CAIP2",
+            Self::PayloadTypeNotAccepted { .. } => "POLICY_PAYLOAD_TYPE_NOT_ACCEPTED",
             Self::WrongSigner { .. } => "SIG_WRONG_SIGNER",
         }
     }
@@ -223,15 +255,21 @@ pub const X402_ERROR_CODES: [&str; 1] = ["X402_WITHDRAW_DELAY_WIDTH"];
 ///
 /// `EngineAndClient` reach, not `EveryStack`: the vault never parses an HTTP header, so no
 /// Solidity custom error exists for any of these (ADR-0012, update of 2026-09-24).
-pub const ENV_ERROR_CODES: [&str; 4] = [
+pub const ENV_ERROR_CODES: [&str; 7] = [
     "ENV_HEADER_TOO_LARGE",
     "ENV_HEADER_NOT_BASE64",
     "ENV_HEADER_MALFORMED",
+    "ENV_SCHEME_UNKNOWN",
+    "ENV_PAYLOAD_TYPE_UNKNOWN",
+    "ENV_AMOUNT_NOT_U128",
     "ENV_NETWORK_NOT_CAIP2",
 ];
 
 /// Rejections that are Tickline declining to serve a valid x402 object.
-pub const POLICY_ERROR_CODES: [&str; 1] = ["POLICY_WITHDRAW_DELAY_BELOW_FLOOR"];
+pub const POLICY_ERROR_CODES: [&str; 2] = [
+    "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
+    "POLICY_PAYLOAD_TYPE_NOT_ACCEPTED",
+];
 
 /// Every code [`ProtocolError::code`] can return.
 ///
