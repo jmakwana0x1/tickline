@@ -238,6 +238,47 @@ fn template_params_hash_for_the_pyth_threshold_template() -> TestResult {
 }
 
 #[test]
+fn the_threshold_hashes_match_the_signed_boundaries() -> TestResult {
+    // Each hash comes from cast, not from this crate's sign test, which is the only way a sign
+    // test can be pinned (CLAUDE.md §5). Zero is here because `threshold < 0` survived mutation
+    // to `== 0` and to `<= 0`: both give zero a negative value's padding, and nothing said
+    // otherwise until this test existed.
+    let vectors = load()?;
+    let template = section(market_section(&vectors)?, "template")?;
+    let price_id = hash(template, "price_id")?;
+
+    let cases = group(section(template, "threshold_cases")?, "cases")?;
+    assert_eq!(cases.len(), 5, "zero, both signs, and both i64 extremes");
+
+    let mut seen = Vec::new();
+    for case in cases {
+        let threshold = text(case, "threshold")?.parse::<i64>()?;
+        let expected = hash(case, "params_hash")?;
+        assert_eq!(
+            pyth_threshold_params_hash(price_id, threshold, Direction::Above),
+            expected,
+            "threshold {threshold}"
+        );
+        assert!(!seen.contains(&expected), "threshold {threshold} collides");
+        seen.push(expected);
+    }
+
+    // The extremes are accepted values, not rejected ones: an int64 threshold has no domain limit
+    // here, because which prices are plausible is the feed's business and the market creator's.
+    assert_eq!(
+        pyth_threshold_params_hash(price_id, i64::MAX, Direction::Above),
+        hash(
+            cases
+                .iter()
+                .find(|c| text(c, "threshold").is_ok_and(|t| t == "9223372036854775807"))
+                .ok_or("i64::MAX case")?,
+            "params_hash"
+        )?
+    );
+    Ok(())
+}
+
+#[test]
 fn a_negative_threshold_is_encoded_as_a_signed_int64() -> TestResult {
     // Pyth prices are signed, and a threshold below zero is legitimate for some feeds. int64 is
     // sign-extended to 32 bytes by abi.encode, so -1 must not hash like u64::MAX.

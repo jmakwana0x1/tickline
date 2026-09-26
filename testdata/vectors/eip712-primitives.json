@@ -259,7 +259,36 @@
       "threshold_note": "int64 in the feed's own exponent: 4000 USD at expo -8.",
       "direction": 0,
       "direction_note": "uint8, 0 above and 1 below.",
-      "template_params_hash": "0xd8f330b7e6b4b4a96579f25597a45ac71f87fe963294b1445bb6b2ef8d44d242"
+      "template_params_hash": "0xd8f330b7e6b4b4a96579f25597a45ac71f87fe963294b1445bb6b2ef8d44d242",
+      "threshold_cases": {
+        "note": "The signed boundaries, each hash computed with cast rather than derived from the code's own sign test. Zero is here because `threshold < 0` survived mutation to `== 0` and `<= 0`: nothing pinned the padding at zero, where a positive value's padding is required.",
+        "cases": [
+          {
+            "threshold": "0",
+            "params_hash": "0x95671e85fba47b2241f50502f46956f64962041939c3741db022454dccc1ee34",
+            "why": "Non-negative, so 24 bytes of 0x00."
+          },
+          {
+            "threshold": "1",
+            "params_hash": "0x2a6c6f63e965ff8f36449fd36eda3aa299b03e9f3eb4b454f3363a6452c95431"
+          },
+          {
+            "threshold": "-1",
+            "params_hash": "0x1d8eb42f598d1c3762c21e2cae0624fee03aeffeb51b2855eb5645f0913a333c",
+            "why": "Negative, so 24 bytes of 0xff. Must not hash like u64::MAX."
+          },
+          {
+            "threshold": "9223372036854775807",
+            "params_hash": "0x98de2cf5c7714fe837d84dbb35510733ba1ef52bf61d76b4bd04380887ad18a9",
+            "why": "i64::MAX, the largest accepted value."
+          },
+          {
+            "threshold": "-9223372036854775808",
+            "params_hash": "0xfc5d218b0092747f1b90a1bc8391c3c43c1b48a582e947ed4d4d1ae7d7095ba4",
+            "why": "i64::MIN, the smallest."
+          }
+        ]
+      }
     },
     "base": {
       "chain_id": 84532,
