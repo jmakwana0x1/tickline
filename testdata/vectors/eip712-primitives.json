@@ -179,5 +179,68 @@
       "solidity": "VoucherClaim { Voucher { ChannelConfig config; uint128 maxClaimableAmount } voucher; bytes signature; uint128 totalClaimed }",
       "selector": "0x488ccc3b"
     }
+  },
+  "receipt": {
+    "note": "PositionReceipt, the object an agent holds against a lying operator. Domain is the Tickline one in `domain` above: name Tickline, version 1, chain 84532, verifyingContract the vault. Computed with cast 1.8.1 on 2026-09-24, independently of the crate that has to reproduce it.",
+    "type_string": "PositionReceipt(bytes32 marketId,address agent,uint128 yesShares,uint128 noShares,uint128 costPaid,uint128 feesPaid,uint64 nonce,uint32 epoch)",
+    "type_hash": "0xb4d79ab70588b361c848daf82bf81cdfbb1f5ff616abe86c5111e305535024cc",
+    "widths": {
+      "note": "Written out rather than computed, because a test that recomputes a limit the way the code computes it agrees with itself (CLAUDE.md section 5). These are type boundaries: the domain boundary is Q_MAX, 1e12 shares or 1e18 base units, about twenty orders of magnitude lower.",
+      "u128_max": "340282366920938463463374607431768211455",
+      "u64_max": "18446744073709551615",
+      "u32_max": "4294967295"
+    },
+    "operator": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "typical": {
+      "why": "A real fill: 1.5 YES shares for 0.7425 USDC plus 100 bps of fee (Qa on #1), at nonce 7 in epoch 3. The fee model is visible in the data rather than only in prose.",
+      "market_id": "0xb1ab840b8a3c85f59ec4e35d42f09995c266c9517bfec3614dbf3efe3feb9495",
+      "agent": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "yes_shares": "1500000",
+      "no_shares": "0",
+      "cost_paid": "742500",
+      "fees_paid": "7425",
+      "nonce": 7,
+      "epoch": 3,
+      "struct_hash": "0x0d46b7d1043c8ade7e8cdb6f74c58e14bd5e583c74694e43ab867607cff4326a",
+      "digest": "0x9afbe9050f0054b98db79fb0f8de0f46a03ed59b6b0de13c20876b672413ab02",
+      "signature": "0x5745ce579a99f47c81b7cc3b815d26f223ebd67afdafafe8fd09ad8d259e0ef76ac280162cf048590d8d587e6325dc0503baac9eb515471a9a5b242666f939b61c"
+    },
+    "at_every_type_maximum": {
+      "why": "An ENCODING test and nothing more. Every field at its type maximum is well formed and economically impossible: Q_MAX caps shares far below this (Phase 4) and the vault's solvency check caps payouts (Phase 3). The engine must never sign one. This crate says what a receipt may encode, not what the engine may issue.",
+      "market_id": "0xb1ab840b8a3c85f59ec4e35d42f09995c266c9517bfec3614dbf3efe3feb9495",
+      "agent": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "yes_shares": "340282366920938463463374607431768211455",
+      "no_shares": "340282366920938463463374607431768211455",
+      "cost_paid": "340282366920938463463374607431768211455",
+      "fees_paid": "340282366920938463463374607431768211455",
+      "nonce": 18446744073709551615,
+      "epoch": 4294967295,
+      "struct_hash": "0x876ceec2f2ea5979e9644646ec9af9cf15f3cb8af0be0b2f7516246d6e3d0d71",
+      "digest": "0xa717bdb120586ab9d51d27baf3621c3d83276545047aac99b1748d1779442753"
+    },
+    "tampered": {
+      "note": "The operator's ONE signature from `typical`, checked against a digest it was not made for. Each recovers to a stranger rather than failing, which is why 'the recovered address is not zero' is never the check (ADR-0012). A stranger is a function of the digest AND the signature together: regenerate either and all of these move, so an address changing in a diff means an unintended encoding change, not drift.",
+      "cases": [
+        {
+          "changed": "epoch",
+          "from": 3,
+          "to": 4,
+          "digest": "0x404b2d1d8892e9aedde56589bbbf5f5eb77c4aec739200181be654005a87df9b",
+          "recovers_to": "0xFFffA5B1756F3Ef1D2b62A37E4821ff5B043Bf2b"
+        },
+        {
+          "changed": "nonce",
+          "from": 7,
+          "to": 8,
+          "digest": "0x952aa44481f20adf3e68674de2bdf81de630955b82724a6fcd1cb87468bb7e62",
+          "recovers_to": "0x617ed2980e0Df51b8a15113fA63851D27b9d25e9"
+        },
+        {
+          "changed": "every field",
+          "digest": "0xa717bdb120586ab9d51d27baf3621c3d83276545047aac99b1748d1779442753",
+          "recovers_to": "0x07616049DEf0290D4dc907B5793406765815C462"
+        }
+      ]
+    }
   }
 }
