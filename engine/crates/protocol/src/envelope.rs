@@ -8,8 +8,10 @@
 //! arrives before any payment has been verified, so every rejection is cheap and typed, and the
 //! size bound is checked before anything is parsed.
 //!
-//! Stub for the red commit; the implementation follows.
+//! Everything here is checked in the cheapest order: the size before the base64, the base64
+//! before the JSON, the JSON before anything semantic.
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde::{Deserialize, Serialize};
 
 use crate::ProtocolError;
@@ -45,12 +47,27 @@ pub struct Network {
 impl Network {
     /// Parse `eip155:<chainId>`.
     ///
+    /// Only the `eip155` namespace is accepted, and the reference must be a plain decimal chain id
+    /// with no leading plus, sign, or whitespace. `base-sepolia` is the V1 spelling and is refused
+    /// here rather than translated: accepting both would mean two names for one network, and the
+    /// challenge we send would not match the one a client echoes.
+    ///
     /// # Errors
     ///
-    /// Stub.
+    /// [`ProtocolError::NetworkNotCaip2`] for anything else.
     pub fn parse(text: &str) -> Result<Self, ProtocolError> {
-        let _ = text;
-        Ok(Self { chain_id: 0 })
+        let refused = || ProtocolError::NetworkNotCaip2 {
+            got: text.to_owned(),
+        };
+        let reference = text.strip_prefix("eip155:").ok_or_else(refused)?;
+        if reference.is_empty() || !reference.bytes().all(|b| b.is_ascii_digit()) {
+            return Err(refused());
+        }
+        let chain_id = reference.parse::<u64>().map_err(|_| refused())?;
+        if chain_id == 0 {
+            return Err(refused());
+        }
+        Ok(Self { chain_id })
     }
 
     /// The chain id.
@@ -68,22 +85,43 @@ impl core::fmt::Display for Network {
 
 /// Decode a base64 payment header into `T`.
 ///
+/// Checked in the cheapest order, which matters because this is the engine's most hostile input:
+/// it arrives before any payment has been verified.
+///
+/// 1. the size, so a megabyte is refused without being decoded;
+/// 2. the base64, so nothing malformed reaches the parser;
+/// 3. the JSON, whose complaint is carried as text because a caller cannot act on it.
+///
 /// # Errors
 ///
-/// Stub.
+/// [`ProtocolError::HeaderTooLarge`], [`ProtocolError::HeaderNotBase64`], or
+/// [`ProtocolError::HeaderMalformed`].
 pub fn decode_header<T: serde::de::DeserializeOwned>(header: &str) -> Result<T, ProtocolError> {
-    let _ = header;
-    Err(ProtocolError::HeaderTooLarge {
-        got: 0,
-        max: MAX_HEADER_BYTES,
+    if header.len() > MAX_HEADER_BYTES {
+        return Err(ProtocolError::HeaderTooLarge {
+            got: header.len(),
+            max: MAX_HEADER_BYTES,
+        });
+    }
+    let bytes = STANDARD
+        .decode(header)
+        .map_err(|_| ProtocolError::HeaderNotBase64)?;
+    serde_json::from_slice(&bytes).map_err(|e| ProtocolError::HeaderMalformed {
+        detail: e.to_string(),
     })
 }
 
 /// Encode a value as a base64 payment header.
+///
+/// Infallible for the types in this crate: they are plain data with no map keys that could fail to
+/// serialize, so a failure here would be a bug rather than an input problem, and an empty header is
+/// refused by the decoder on the other side.
 #[must_use]
 pub fn encode_header<T: serde::Serialize>(value: &T) -> String {
-    let _ = value;
-    String::new()
+    match serde_json::to_vec(value) {
+        Ok(bytes) => STANDARD.encode(bytes),
+        Err(_) => String::new(),
+    }
 }
 
 /// The body of a 402 answer: what payment this endpoint accepts.
@@ -131,11 +169,11 @@ pub struct ChallengeExtra {
 }
 
 impl Challenge {
-    /// Check that the challenge is one this engine would have produced.
+    /// Check that the challenge is one this engine would have produced, and return its network.
     ///
     /// # Errors
     ///
-    /// Stub.
+    /// [`ProtocolError::NetworkNotCaip2`] when the network is not CAIP-2.
     pub fn validate(&self) -> Result<Network, ProtocolError> {
         Network::parse(&self.network)
     }
