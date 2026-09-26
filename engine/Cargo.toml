@@ -33,6 +33,8 @@ thiserror = "2.0"
 alloy-primitives = { version = "=1.7.3", default-features = false }
 # secp256k1 recovery for protocol (ADR-0011). Pure Rust, no signer wrapper: ADR-0012 inspects s.
 k256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
+# x402 payment headers are base64 (ADR-0011, docs/spec-notes.md section 3).
+base64 = "0.22"
 
 # IO layers only. lmsr and protocol must not reach for these
 # (enforced by scripts/check-crate-boundaries.sh).

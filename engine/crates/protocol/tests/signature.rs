@@ -16,7 +16,7 @@ use common::{address, group, hash, load, section, signature_bytes, text, uint, T
 use protocol::{
     signature::{CURVE_ORDER, HALF_CURVE_ORDER},
     CodeFamily, ProtocolError, Reach, Scalar, Signature, CODE_FAMILIES, CODE_PREFIXES,
-    POLICY_ERROR_CODES, SIGNATURE_ERROR_CODES, X402_ERROR_CODES,
+    ENV_ERROR_CODES, POLICY_ERROR_CODES, SIGNATURE_ERROR_CODES, X402_ERROR_CODES,
 };
 
 /// One valid fixture: the bytes, the digest they were signed over, and who signed.
@@ -367,6 +367,26 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
             "POLICY_WITHDRAW_DELAY_BELOW_FLOOR",
         ),
         (
+            ProtocolError::HeaderTooLarge {
+                got: 9000,
+                max: 8192,
+            },
+            "ENV_HEADER_TOO_LARGE",
+        ),
+        (ProtocolError::HeaderNotBase64, "ENV_HEADER_NOT_BASE64"),
+        (
+            ProtocolError::HeaderMalformed {
+                detail: "expected value".to_owned(),
+            },
+            "ENV_HEADER_MALFORMED",
+        ),
+        (
+            ProtocolError::NetworkNotCaip2 {
+                got: "base-sepolia".to_owned(),
+            },
+            "ENV_NETWORK_NOT_CAIP2",
+        ),
+        (
             ProtocolError::WrongSigner {
                 expected: Address::repeat_byte(0x11),
                 recovered: Address::repeat_byte(0x22),
@@ -394,7 +414,11 @@ fn every_rejection_carries_its_stable_code() -> TestResult {
             ProtocolError::Unrecoverable => 8,
             ProtocolError::WithdrawDelayWidth { .. } => 9,
             ProtocolError::WithdrawDelayBelowFloor { .. } => 10,
-            ProtocolError::WrongSigner { .. } => 11,
+            ProtocolError::HeaderTooLarge { .. } => 11,
+            ProtocolError::HeaderNotBase64 => 12,
+            ProtocolError::HeaderMalformed { .. } => 13,
+            ProtocolError::NetworkNotCaip2 { .. } => 14,
+            ProtocolError::WrongSigner { .. } => 15,
         }
     }
     for (index, (error, _)) in coded.iter().enumerate() {
@@ -488,12 +512,14 @@ fn every_code_is_namespaced_and_globally_unique() -> TestResult {
     assert_eq!(reach("SIG_"), Some(Reach::EveryStack));
     assert_eq!(reach("X402_"), Some(Reach::EveryStack));
     assert_eq!(reach("POLICY_"), Some(Reach::EngineAndClient));
+    assert_eq!(reach("ENV_"), Some(Reach::EngineAndClient));
 
     // Each family's list is reachable by name as well as through the registry, so a family cannot
     // be published under one name and registered under another.
     assert_eq!(codes_of("SIG_"), SIGNATURE_ERROR_CODES.to_vec());
     assert_eq!(codes_of("X402_"), X402_ERROR_CODES.to_vec());
     assert_eq!(codes_of("POLICY_"), POLICY_ERROR_CODES.to_vec());
+    assert_eq!(codes_of("ENV_"), ENV_ERROR_CODES.to_vec());
     Ok(())
 }
 

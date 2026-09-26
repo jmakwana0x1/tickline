@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 pub mod eip712;
+pub mod envelope;
 pub mod market_id;
 pub mod receipt;
 pub mod signature;
@@ -19,8 +20,8 @@ pub mod x402;
 mod error;
 
 pub use error::{
-    CodeFamily, ProtocolError, Reach, Scalar, CODE_FAMILIES, CODE_PREFIXES, POLICY_ERROR_CODES,
-    SIGNATURE_ERROR_CODES, X402_ERROR_CODES,
+    CodeFamily, ProtocolError, Reach, Scalar, CODE_FAMILIES, CODE_PREFIXES, ENV_ERROR_CODES,
+    POLICY_ERROR_CODES, SIGNATURE_ERROR_CODES, X402_ERROR_CODES,
 };
 pub use signature::Signature;
 

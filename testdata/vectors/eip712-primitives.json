@@ -318,5 +318,60 @@
         "why": "Identical market parameters. A redeployed vault must not inherit the old one's market ids."
       }
     ]
+  },
+  "envelope": {
+    "note": "The x402 V2 wire format toward clients, from docs/spec-notes.md section 3. Tickline runs no facilitator (Q6), so the engine produces and consumes these itself, but the format is the spec's so the official TS client works unchanged.",
+    "x402_version": 2,
+    "headers": {
+      "request": "PAYMENT-SIGNATURE",
+      "response": "PAYMENT-RESPONSE",
+      "why": "V2 names, not V1's X-PAYMENT and X-PAYMENT-RESPONSE."
+    },
+    "networks": {
+      "note": "CAIP-2, not a slug. base-sepolia is a V1 spelling and must be refused.",
+      "base_sepolia": "eip155:84532",
+      "base_mainnet": "eip155:8453",
+      "rejected": [
+        "base-sepolia",
+        "base",
+        "eip155",
+        "eip155:",
+        "eip155:abc",
+        ":84532",
+        "eip155:84532:1"
+      ]
+    },
+    "challenge": {
+      "why": "What the engine answers an unpaid request with. amount is the per-request ceiling the client turns into maxClaimableAmount, not a price.",
+      "required_extra": [
+        "receiverAuthorizer",
+        "withdrawDelay",
+        "name",
+        "version"
+      ],
+      "optional_extra": [
+        "assetTransferMethod",
+        "minDeposit",
+        "channelState",
+        "voucherState"
+      ],
+      "token_domain_note": "extra.name and extra.version are the TOKEN's EIP-3009 domain, USDC and 2 here. They are NOT the x402 domain, which is 'x402 Batch Settlement' version 1. A deposit signature verifies against the wrong domain if the two are confused.",
+      "body": {
+        "scheme": "batch-settlement",
+        "network": "eip155:84532",
+        "amount": "100000",
+        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "payTo": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "maxTimeoutSeconds": 3600,
+        "extra": {
+          "receiverAuthorizer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+          "withdrawDelay": 3600,
+          "name": "USDC",
+          "version": "2",
+          "minDeposit": "1000000"
+        }
+      },
+      "json": "{\"scheme\":\"batch-settlement\",\"network\":\"eip155:84532\",\"amount\":\"100000\",\"asset\":\"0x036CbD53842c5426634e7929541eC2318f3dCF7e\",\"payTo\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"maxTimeoutSeconds\":3600,\"extra\":{\"receiverAuthorizer\":\"0x70997970C51812dc3A010C7d01b50e0d17dc79C8\",\"withdrawDelay\":3600,\"name\":\"USDC\",\"version\":\"2\",\"minDeposit\":\"1000000\"}}"
+    }
   }
 }
