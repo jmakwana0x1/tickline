@@ -11,6 +11,7 @@
 #![forbid(unsafe_code)]
 
 pub mod eip712;
+pub mod market_id;
 pub mod receipt;
 pub mod signature;
 pub mod x402;

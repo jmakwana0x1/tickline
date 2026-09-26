@@ -242,5 +242,52 @@
         }
       ]
     }
+  },
+  "market_id": {
+    "note": "ADR-0013. Not EIP-712: a plain keccak256 preimage, tagged and bound to the chain and the vault, because the market id is the key every position, commit and claim is filed under. Computed with cast 1.8.1 on 2026-09-26.",
+    "tag": {
+      "value": "0x5469636b6c696e65204d61726b65744964207631000000000000000000000000",
+      "as_string": "Tickline MarketId v1",
+      "why": "The string as a bytes32 literal, right-padded. A preimage is what a human reads when a hash disagrees, and a literal shows as text in a cast dump where a keccak shows 32 opaque bytes. The alternative, keccak256 of the same string, is 0xb9f45e5973771fa38a5985ebb20dd891bcc39d62f9435beac6de57cfe49d204f."
+    },
+    "template": {
+      "name": "pyth-threshold-v1",
+      "template_id": "0x0bb1a797d3ee9dfb409f0f7dfa94ff9b9be705e41cad289f02f39a64cfa6a31e",
+      "price_id": "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
+      "price_id_note": "Pyth ETH/USD. Held here as a fixture only; the feed id a market uses is the creator's choice.",
+      "threshold": "400000000000",
+      "threshold_note": "int64 in the feed's own exponent: 4000 USD at expo -8.",
+      "direction": 0,
+      "direction_note": "uint8, 0 above and 1 below.",
+      "template_params_hash": "0xd8f330b7e6b4b4a96579f25597a45ac71f87fe963294b1445bb6b2ef8d44d242"
+    },
+    "base": {
+      "chain_id": 84532,
+      "vault": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "creator": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "template_id": "0x0bb1a797d3ee9dfb409f0f7dfa94ff9b9be705e41cad289f02f39a64cfa6a31e",
+      "template_params_hash": "0xd8f330b7e6b4b4a96579f25597a45ac71f87fe963294b1445bb6b2ef8d44d242",
+      "deadline": 1790035200,
+      "b": "1000000000000000000000",
+      "epoch_length": 3600,
+      "salt": "0x0000000000000000000000000000000000000000000000000000000000000001",
+      "market_id": "0x76c4ff5f270665efc95a83a41619b61d709983292e262b45726f5b9aab1b4940"
+    },
+    "domain_variants": [
+      {
+        "what_changed": "chain_id",
+        "chain_id": 1,
+        "vault": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "market_id": "0xe89d5bdeb17600b064abc32feb42350c88b5af4991ad3a39230ef3731d325a3e",
+        "why": "Identical market parameters. A receipt signed for this market on one chain must not be valid on another."
+      },
+      {
+        "what_changed": "vault",
+        "chain_id": 84532,
+        "vault": "0x000000000000000000000000000000000000dEaD",
+        "market_id": "0x60beb4a23e983b5b25be5a8a8e06a8b6dc822d88184b3decf7a7ffccc92ac7ef",
+        "why": "Identical market parameters. A redeployed vault must not inherit the old one's market ids."
+      }
+    ]
   }
 }
