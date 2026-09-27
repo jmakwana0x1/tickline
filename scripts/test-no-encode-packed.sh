@@ -64,6 +64,23 @@ expect "rejects abi.encodePacked split across lines" fail "$dir"
 make_contracts 'contract Thing { uint256 x; }' 'contract Vendored { function f() public pure returns (bytes memory) { return abi.encodePacked("a", "b"); } }'
 expect "ignores vendored lib/" pass "$dir"
 
+make_contracts 'contract Thing {
+    /// @dev abi.encodePacked is banned here, which this comment says out loud.
+    // abi.encodePacked(uint8(1))
+    uint256 x;
+}'
+expect "accepts the ban named in a comment" pass "$dir"
+
+make_contracts 'contract Thing {
+    /* abi.encodePacked in a block comment */
+    uint256 x;
+}'
+expect "accepts the ban named in a block comment" pass "$dir"
+
+make_contracts 'contract Thing { function f() public pure returns (bytes32) { return keccak256(abi.encode(uint8(1))); } // not abi.encodePacked
+}'
+expect "accepts a trailing comment mentioning it" pass "$dir"
+
 expect "passes on the committed contracts" pass "$PWD/contracts"
 
 (( failures == 0 )) || exit 1

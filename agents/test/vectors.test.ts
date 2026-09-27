@@ -77,3 +77,60 @@ describe('the committed vectors', () => {
     }
   });
 });
+
+describe('the invalid vectors', () => {
+  it('names a code for every rejection, and they are ADR-0012 codes', () => {
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as {
+      invalid: {
+        codes: string[];
+        signatures: Array<{ code: string; signature: string; why: string }>;
+        wrong_signer: { code: string };
+        channel_config: { code: string };
+      };
+    };
+
+    // The flat list and the entries are the same list: Solidity reads the flat one because it
+    // cannot do JSONPath wildcards, and a drift between them would silently shrink its coverage.
+    expect(v.invalid.codes).toEqual(v.invalid.signatures.map((s) => s.code));
+
+    const all = [
+      ...v.invalid.codes,
+      v.invalid.wrong_signer.code,
+      v.invalid.channel_config.code,
+    ];
+    expect(new Set(all).size).toBe(all.length);
+    for (const code of all) {
+      expect(code, 'every code belongs to a reserved family').toMatch(/^(SIG_|X402_|POLICY_|ENV_)/);
+    }
+
+    // Every ADR-0012 signature rule is covered, by name, so a rule cannot be dropped quietly.
+    expect(v.invalid.codes).toEqual([
+      'SIG_COMPACT',
+      'SIG_LENGTH',
+      'SIG_RECOVERY_ID',
+      'SIG_R_ZERO',
+      'SIG_S_ZERO',
+      'SIG_R_ABOVE_ORDER',
+      'SIG_S_ABOVE_ORDER',
+      'SIG_HIGH_S',
+      'SIG_UNRECOVERABLE',
+    ]);
+  });
+
+  it('carries a signature that is not 65 bytes for the length cases', () => {
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as { invalid: { signatures: Array<{ code: string; signature: string }> } };
+
+    const bytesOf = (hex: string): number => (hex.length - 2) / 2;
+    const byCode = new Map(v.invalid.signatures.map((s) => [s.code, s.signature]));
+
+    expect(bytesOf(byCode.get('SIG_COMPACT') ?? '0x')).toBe(64);
+    expect(bytesOf(byCode.get('SIG_LENGTH') ?? '0x')).toBe(66);
+    for (const code of ['SIG_R_ZERO', 'SIG_S_ZERO', 'SIG_HIGH_S', 'SIG_UNRECOVERABLE']) {
+      expect(bytesOf(byCode.get(code) ?? '0x'), `${code} is a well-formed length`).toBe(65);
+    }
+  });
+});

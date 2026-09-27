@@ -34,6 +34,19 @@ jobs:
       - run: just migrate
       - run: just deep
 
+  # The fork suite reads the deployed escrow, so it runs here and in phase-gate, never per PR (#67).
+  fork:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: ./.github/actions/setup
+        with: { node: 'false', sqlx: 'false' }
+      - run: just test-fork
+        env:
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+
   mutants:
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -45,8 +58,8 @@ jobs:
       - run: just mutants
 
   report:
-    if: always() && (needs.deep.result == 'failure' || needs.mutants.result == 'failure')
-    needs: [deep, mutants]
+    if: always() && (needs.deep.result == 'failure' || needs.mutants.result == 'failure' || needs.fork.result == 'failure')
+    needs: [deep, mutants, fork]
     runs-on: ubuntu-latest
     permissions: { issues: write }
     steps:

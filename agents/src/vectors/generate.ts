@@ -753,6 +753,42 @@ async function main(): Promise<void> {
             'the two-entry case is what Phase 5 signs.',
         },
       ],
+      selectors: {
+        signatures: [
+          'CHANNEL_CONFIG_TYPEHASH()',
+          'VOUCHER_TYPEHASH()',
+          'REFUND_TYPEHASH()',
+          'CLAIM_ENTRY_TYPEHASH()',
+          'CLAIM_BATCH_TYPEHASH()',
+          'getChannelId((address,address,address,address,address,uint40,bytes32))',
+          'getVoucherDigest(bytes32,uint128)',
+          'getClaimBatchDigest((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])',
+          'MIN_WITHDRAW_DELAY()',
+          'MAX_WITHDRAW_DELAY()',
+        ],
+        note:
+          'Computed from the signature strings, and asserted against the deployment by the fork ' +
+          'suite: a redeployed escrow with a changed signature then fails by name instead of as a ' +
+          'bare revert, which is what cost an afternoon when getClaimBatchDigest had to be ' +
+          'recovered from bytecode (#67).',
+        entries: (
+          [
+            'CHANNEL_CONFIG_TYPEHASH()',
+            'VOUCHER_TYPEHASH()',
+            'REFUND_TYPEHASH()',
+            'CLAIM_ENTRY_TYPEHASH()',
+            'CLAIM_BATCH_TYPEHASH()',
+            'getChannelId((address,address,address,address,address,uint40,bytes32))',
+            'getVoucherDigest(bytes32,uint128)',
+            'getClaimBatchDigest((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])',
+            'MIN_WITHDRAW_DELAY()',
+            'MAX_WITHDRAW_DELAY()',
+          ] as const
+        ).map((signature) => ({
+          signature,
+          selector: keccak256(toBytes(signature)).slice(0, 10),
+        })),
+      },
       wire_struct: {
         note:
           'What getClaimBatchDigest takes, which is not the signed type: it carries the ' +

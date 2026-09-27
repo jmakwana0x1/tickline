@@ -147,6 +147,14 @@ vectors-eip712:
     # Last, so a key-ish field fails at generation rather than two steps downstream in lint (#67).
     @bash scripts/check-vector-secrets.sh
 
+# The only suite allowed network access (CLAUDE.md section 2). Needs BASE_SEPOLIA_RPC_URL.
+#
+# --force is not optional: forge caches which tests it found per profile, and without it a run that
+# selected the fork profile after a default-profile run reports "No tests found" while `--list`
+# happily shows all five (#67).
+test-fork:
+    cd {{contracts}} && FOUNDRY_PROFILE=fork forge test --force
+
 slither:
     cd {{contracts}} && slither . --config-file slither.config.json
 

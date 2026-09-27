@@ -267,6 +267,63 @@
         "why": "Kept only so a failure distinguishes wrong batch framing from wrong concatenation; the two-entry case is what Phase 5 signs."
       }
     ],
+    "selectors": {
+      "signatures": [
+        "CHANNEL_CONFIG_TYPEHASH()",
+        "VOUCHER_TYPEHASH()",
+        "REFUND_TYPEHASH()",
+        "CLAIM_ENTRY_TYPEHASH()",
+        "CLAIM_BATCH_TYPEHASH()",
+        "getChannelId((address,address,address,address,address,uint40,bytes32))",
+        "getVoucherDigest(bytes32,uint128)",
+        "getClaimBatchDigest((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])",
+        "MIN_WITHDRAW_DELAY()",
+        "MAX_WITHDRAW_DELAY()"
+      ],
+      "note": "Computed from the signature strings, and asserted against the deployment by the fork suite: a redeployed escrow with a changed signature then fails by name instead of as a bare revert, which is what cost an afternoon when getClaimBatchDigest had to be recovered from bytecode (#67).",
+      "entries": [
+        {
+          "signature": "CHANNEL_CONFIG_TYPEHASH()",
+          "selector": "0x8e4a68ac"
+        },
+        {
+          "signature": "VOUCHER_TYPEHASH()",
+          "selector": "0x94739e87"
+        },
+        {
+          "signature": "REFUND_TYPEHASH()",
+          "selector": "0x1e69ef40"
+        },
+        {
+          "signature": "CLAIM_ENTRY_TYPEHASH()",
+          "selector": "0xba94ec0d"
+        },
+        {
+          "signature": "CLAIM_BATCH_TYPEHASH()",
+          "selector": "0x53ab0fae"
+        },
+        {
+          "signature": "getChannelId((address,address,address,address,address,uint40,bytes32))",
+          "selector": "0x5e5e0b87"
+        },
+        {
+          "signature": "getVoucherDigest(bytes32,uint128)",
+          "selector": "0x862bb199"
+        },
+        {
+          "signature": "getClaimBatchDigest((((address,address,address,address,address,uint40,bytes32),uint128),bytes,uint128)[])",
+          "selector": "0x488ccc3b"
+        },
+        {
+          "signature": "MIN_WITHDRAW_DELAY()",
+          "selector": "0xae159439"
+        },
+        {
+          "signature": "MAX_WITHDRAW_DELAY()",
+          "selector": "0x1fc3277d"
+        }
+      ]
+    },
     "wire_struct": {
       "note": "What getClaimBatchDigest takes, which is not the signed type: it carries the ChannelConfig and derives the channelId itself, and its third field is totalClaimed, cumulative, never a per-batch delta.",
       "solidity": "VoucherClaim { Voucher { ChannelConfig config; uint128 maxClaimableAmount } voucher; bytes signature; uint128 totalClaimed }",

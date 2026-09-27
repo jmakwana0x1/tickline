@@ -177,7 +177,10 @@ contract TicklineTypesTest is Test {
                 "the flat code list and the entries must be the same list"
             );
             bytes memory signature = vm.parseJsonBytes(vectors, string.concat(at, ".signature"));
-            vm.expectRevert(selectorFor(codes[i]));
+            // expectPartialRevert, not expectRevert: the latter demands the revert data be exactly
+            // four bytes, and SignatureLength and SignatureRecoveryId carry the offending value.
+            // Matching the selector is the right semantic anyway: refused with this code.
+            vm.expectPartialRevert(selectorFor(codes[i]));
             this.verify(d, signature, expected);
         }
     }
