@@ -20,7 +20,14 @@ import {Test} from "forge-std/Test.sol";
 ///         as happily as a correct one, so no digest can prove the agent pays and the operator
 ///         receives. The escrow checking the caller can (`CLAUDE.md` §5).
 ///
-///      Runs in `phase-gate` and nightly only: the `ci` profile excludes `test/fork`.
+///      **These assertions read latest state on purpose.** No block is pinned, and none should be:
+///      detecting a redeployed or upgraded escrow is the suite's entire reason to exist, and a
+///      pinned block would make it deterministic by making it blind. Determinism belongs to every
+///      other suite in this repository; this one trades it for the only thing it can uniquely see.
+///
+///      Runs in `phase-gate` and nightly only: the `ci` profile excludes `test/fork`. It is driven
+///      by `scripts/fork-suite.sh`, which keeps three outcomes apart, because an unreachable
+///      endpoint and a changed type hash are different findings and only the second is ours.
 contract X402EscrowForkTest is Test {
     /// @dev The canonical escrow, identical on every supported chain via CREATE2.
     address internal constant ESCROW = 0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003;
@@ -48,7 +55,7 @@ contract X402EscrowForkTest is Test {
     }
 
     /// @notice Every selector the vectors name exists on the deployment.
-    function test_EverySelectorExists() public {
+    function test_EverySelectorExists() public view {
         // The count comes from the file: a constant here would silently stop covering a getter the
         // generator adds.
         string[] memory signatures = vm.parseJsonStringArray(vectors, ".x402.selectors.signatures");
@@ -76,7 +83,7 @@ contract X402EscrowForkTest is Test {
     }
 
     /// @notice The five type hashes are the contract's own constants.
-    function test_TypeHashesAreTheContractsOwn() public {
+    function test_TypeHashesAreTheContractsOwn() public view {
         for (uint256 i = 0; i < 4; i++) {
             string memory at = string.concat(".x402.type_hashes[", vm.toString(i), "]");
             string memory getter = vm.parseJsonString(vectors, string.concat(at, ".getter"));
@@ -101,7 +108,7 @@ contract X402EscrowForkTest is Test {
     }
 
     /// @notice The committed channel ids, voucher digest and batch digest are the contract's.
-    function test_CommittedDigestsAreTheContracts() public {
+    function test_CommittedDigestsAreTheContracts() public view {
         ChannelConfig memory first = configAt(".x402.channels[0].config");
         ChannelConfig memory second = configAt(".x402.channels[1].config");
 
@@ -159,7 +166,7 @@ contract X402EscrowForkTest is Test {
     }
 
     /// @notice The withdrawal bounds `docs/spec-notes.md` §1 records are the deployment's.
-    function test_WithdrawDelayBoundsMatchTheNotes() public {
+    function test_WithdrawDelayBoundsMatchTheNotes() public view {
         (bool minOk, bytes memory min) =
             ESCROW.staticcall(abi.encodeWithSelector(bytes4(keccak256("MIN_WITHDRAW_DELAY()"))));
         (bool maxOk, bytes memory max) =

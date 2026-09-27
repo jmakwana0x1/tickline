@@ -35,3 +35,12 @@ jobs:
         with: { sqlx: 'true', uv: 'true', gate-tools: 'true' }
       - run: just migrate
       - run: just gate "$(cat .phase)"
+      # The fork suite reads the deployed escrow, so it stays out of gate.sh: gate_2 runs in per-PR
+      # CI once Phase 2 closes, and that would put network access in every PR (#67, #80).
+      #
+      # Any non-zero fails here, an unreachable endpoint included: a phase should not close without
+      # the suite having actually run. The script's exit code says which happened, so the log
+      # distinguishes an outage from a disagreement.
+      - run: just test-fork
+        env:
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}

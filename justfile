@@ -74,6 +74,8 @@ lint:
     @bash scripts/check-vector-secrets.sh
     @bash scripts/test-no-encode-packed.sh
     @bash scripts/check-no-encode-packed.sh
+    # The fork suite's own classification, provable without the network (#80).
+    @bash scripts/test-fork-suite.sh
 
 # Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
 # staged files, so this is the check to run before a push, and after any history rewrite (#72).
@@ -153,7 +155,7 @@ vectors-eip712:
 # selected the fork profile after a default-profile run reports "No tests found" while `--list`
 # happily shows all five (#67).
 test-fork:
-    cd {{contracts}} && FOUNDRY_PROFILE=fork forge test --force
+    @bash scripts/fork-suite.sh
 
 slither:
     cd {{contracts}} && slither . --config-file slither.config.json

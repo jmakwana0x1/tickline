@@ -43,9 +43,21 @@ jobs:
         with: { submodules: recursive }
       - uses: ./.github/actions/setup
         with: { node: 'false', sqlx: 'false' }
-      - run: just test-fork
+      # An outage is not a finding, so it warns rather than opening an issue claiming the escrow
+      # changed. A disagreement fails, and the report job turns that into one (#80, condition 2).
+      - name: fork suite against the deployed escrow
         env:
           BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+        run: |
+          set +e
+          just test-fork
+          code=$?
+          set -e
+          case "$code" in
+            0)  echo "::notice::the deployment agrees with the committed vectors" ;;
+            75) echo "::warning::could not reach Base Sepolia; the fork suite did not run" ;;
+            *)  exit "$code" ;;
+          esac
 
   mutants:
     runs-on: ubuntu-latest

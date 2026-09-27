@@ -67,6 +67,15 @@ fail_on_revert = true
 no_match_path = "test/nothing-is-here/*"
 match_path = "test/fork/*"
 
+# forge-lint, new in Foundry 1.8, and pointed at production Solidity only.
+#
+# Its loop, low-level-call and typecast rules are gas and safety advice for deployed code. A
+# cross-stack vector reader is loops of staticcalls and casts of committed fixtures by construction,
+# so in `test/` those rules fire 67 times and say nothing: the inputs are a file we generated, not a
+# caller. `src/` keeps every rule, which is where the advice is worth taking.
+[lint]
+ignore = ["test/**/*.sol"]
+
 [fmt]
 line_length = 100
 tab_width = 4
