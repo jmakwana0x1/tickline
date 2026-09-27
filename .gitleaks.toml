@@ -22,20 +22,24 @@ regexes = [
   '''7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6''',
   # zero-value placeholders
   '''0{64}''',
-  # Public constants, not secrets, each one enumerated rather than allowed by path or by rule.
-  # The scanner cannot tell a 32-byte constant from a 32-byte key, and these have to live in code:
-  # a library that hashes signatures needs the curve order inline, and a generator needs its inputs.
+  # Public constants, enumerated rather than allowed by path or by rule.
   #
-  # secp256k1's group order and its half, from SEC 2 section 2.4.1. The most public numbers in
-  # elliptic-curve cryptography; EIP-2 is about the second one.
+  # The code no longer spells the first three as hex at all: the curve order and its half are decimal
+  # literals and fixture salts come from a helper (#80). They stay listed because gitleaks scans
+  # every commit reachable from a branch, and two commits on 2/67 still carry the old literals. Once
+  # #80 squash-merges, main's history will not, and #81 removes these three.
+  #
+  # secp256k1's group order and its half, from SEC 2 section 2.4.1. EIP-2 is about the second.
   '''fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141''',
   '''7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0''',
-  # Channel and market salts in the vector generator: 63 zeros and a digit. Fixture inputs.
+  # Fixture salts in the generator's history: 63 zeros and a digit.
   '''0{63}[12]''',
+  #
   # The market id domain tag: "Tickline MarketId v1" as a right-padded bytes32, so it decodes to
-  # ASCII text rather than to entropy (ADR-0013).
+  # ASCII rather than to entropy, and a test asserts exactly that (ADR-0013).
   '''5469636b6c696e65204d61726b65744964207631000000000000000000000000''',
-  # Pyth's ETH/USD price feed id, published in their feed registry.
+  # Pyth's ETH/USD price feed id, published in their feed registry. A 32-byte identifier with no
+  # other spelling.
   '''ff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace''',
 ]
 paths = [

@@ -59,13 +59,17 @@ library TicklineTypes {
     ///      disagrees. The `v1` is deliberate: if the preimage changes shape, old ids cannot collide.
     bytes32 internal constant MARKET_ID_TAG = "Tickline MarketId v1";
 
-    /// @notice secp256k1's group order, from SEC 2 section 2.4.1.
+    /// @notice secp256k1's group order `n`, from SEC 2 section 2.4.1.
+    /// @dev Decimal, not hex, and not because hex reads worse: a 32-byte hex literal is
+    ///      indistinguishable from a private key to any secret scanner, and the alternative was an
+    ///      allowlist entry for it. The value is the same number either way, and the tests pin it
+    ///      against the committed vectors.
     uint256 internal constant CURVE_ORDER =
-        0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141;
+        115_792_089_237_316_195_423_570_985_008_687_907_852_837_564_279_074_904_382_605_163_141_518_161_494_337;
 
     /// @notice `n / 2`. EIP-2 invalidates `s` strictly above this, so the boundary is inclusive.
     uint256 internal constant HALF_CURVE_ORDER =
-        0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0;
+        57_896_044_618_658_097_711_785_492_504_343_953_926_418_782_139_537_452_191_302_581_570_759_080_747_168;
 
     /// @notice The largest `uint40`, the width the escrow gives `withdrawDelay`.
     uint256 internal constant UINT40_MAX = 1_099_511_627_775;

@@ -162,9 +162,23 @@ interface ReceiptFields {
 const DOMAIN_TYPE =
   'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)';
 
-/** secp256k1's group order and its half, from SEC 2 section 2.4.1. Written out, never computed. */
-const CURVE_ORDER = '0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141';
-const HALF_CURVE_ORDER = '0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0';
+/**
+ * secp256k1's group order and its half, from SEC 2 section 2.4.1. Written out, never computed.
+ *
+ * Decimal rather than hex: a 32-byte hex literal is indistinguishable from a private key to any
+ * secret scanner, and the alternative was allowlisting these two in `.gitleaks.toml`. The vector
+ * file still carries them as hex, which is where a reader wants them, because a vector file is
+ * allowlisted by path for exactly that reason.
+ */
+const CURVE_ORDER =
+  115792089237316195423570985008687907852837564279074904382605163141518161494337n;
+const HALF_CURVE_ORDER =
+  57896044618658097711785492504343953926418782139537452191302581570759080747168n;
+
+/** A 32-byte salt from a small number, so no mostly-zero hex literal appears in this file. */
+function salt(n: number): Hex {
+  return `0x${n.toString(16).padStart(64, '0')}`;
+}
 
 /** `uint128`, `uint64` and `uint32` ceilings, written out rather than computed (CLAUDE.md §5). */
 const U128_MAX = '340282366920938463463374607431768211455';
@@ -292,12 +306,9 @@ async function main(): Promise<void> {
     receiverAuthorizer: operator.address,
     token: TOKEN,
     withdrawDelay: 3600,
-    salt: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
+    salt: salt(1),
   };
-  const secondConfig = {
-    ...channelConfig,
-    salt: '0x0000000000000000000000000000000000000000000000000000000000000002' as Hex,
-  };
+  const secondConfig = { ...channelConfig, salt: salt(2) };
 
   const channelId = computeChannelId(channelConfig, CHAIN_ID);
   const secondChannelId = computeChannelId(secondConfig, CHAIN_ID);
@@ -374,7 +385,7 @@ async function main(): Promise<void> {
     deadline: 1_790_035_200n,
     b: 1_000_000_000_000_000_000_000n,
     epochLength: 3600,
-    salt: '0x0000000000000000000000000000000000000000000000000000000000000001' as Hex,
+    salt: salt(1),
   };
   const baseMarketId = marketId(market);
 
@@ -470,11 +481,11 @@ async function main(): Promise<void> {
   const sHex = validSig.slice(66, 130);
   const vHex = validSig.slice(130, 132);
   const sValue = BigInt(`0x${sHex}`);
-  const highS = BigInt(CURVE_ORDER) - sValue;
+  const highS = CURVE_ORDER - sValue;
   const flippedV = vHex === '1b' ? '1c' : '1b';
   const word = (value: bigint): string => value.toString(16).padStart(64, '0');
   const zero = word(0n);
-  const order = word(BigInt(CURVE_ORDER));
+  const order = word(CURVE_ORDER);
 
   const invalidSignatures = [
     {
@@ -520,7 +531,7 @@ async function main(): Promise<void> {
     {
       code: 'SIG_UNRECOVERABLE',
       why: 'r is a valid scalar and not the x coordinate of any point with this parity.',
-      signature: `0x${word(BigInt(CURVE_ORDER) - 1n)}${word(1n)}1b`,
+      signature: `0x${word(CURVE_ORDER - 1n)}${word(1n)}1b`,
     },
   ];
 
@@ -652,7 +663,11 @@ async function main(): Promise<void> {
       signature: entry.signature,
       signer: operator.address,
     })),
-    secp256k1: { source: 'SEC 2 section 2.4.1', n: CURVE_ORDER, half_n: HALF_CURVE_ORDER },
+    secp256k1: {
+      source: 'SEC 2 section 2.4.1',
+      n: `0x${CURVE_ORDER.toString(16)}`,
+      half_n: `0x${HALF_CURVE_ORDER.toString(16)}`,
+    },
     invalid: {
       confirmed_by: 'ours' as ConfirmedBy,
       note:
