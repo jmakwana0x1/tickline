@@ -456,6 +456,62 @@ async function main(): Promise<void> {
     }),
   );
 
+  // ---------------------------------------------------------------- invalid cases, with codes
+  //
+  // Every rejection in ADR-0012 as a vector, so all three stacks refuse the same bytes for the same
+  // named reason. A policy only the engine enforces is worthless, because the vault settles the
+  // disputes (#66, #67).
+  const validSig = receiptSignature;
+  const r = validSig.slice(2, 66);
+  const sHex = validSig.slice(66, 130);
+  const vHex = validSig.slice(130, 132);
+  const sValue = BigInt(`0x${sHex}`);
+  const highS = BigInt(CURVE_ORDER) - sValue;
+  const flippedV = vHex === '1b' ? '1c' : '1b';
+  const word = (value: bigint): string => value.toString(16).padStart(64, '0');
+  const zero = word(0n);
+  const order = word(BigInt(CURVE_ORDER));
+
+  const invalidSignatures = [
+    {
+      code: 'SIG_COMPACT',
+      why: 'EIP-2098, 64 bytes. A real encoding of a real signature, and not ours.',
+      signature: `0x${r}${sHex}`,
+    },
+    {
+      code: 'SIG_LENGTH',
+      why: 'One byte too many.',
+      signature: `${validSig}00`,
+    },
+    {
+      code: 'SIG_RECOVERY_ID',
+      why: 'v written as a bare recovery id. Rejected, never normalized.',
+      signature: `0x${r}${sHex}01`,
+    },
+    { code: 'SIG_R_ZERO', why: 'A zero scalar is not a signature.', signature: `0x${zero}${sHex}${vHex}` },
+    { code: 'SIG_S_ZERO', why: 'A zero scalar is not a signature.', signature: `0x${r}${zero}${vHex}` },
+    {
+      code: 'SIG_R_ABOVE_ORDER',
+      why: 'At the curve order, so not a scalar.',
+      signature: `0x${order}${sHex}${vHex}`,
+    },
+    {
+      code: 'SIG_S_ABOVE_ORDER',
+      why: 'At the curve order, so not a scalar.',
+      signature: `0x${r}${order}${vHex}`,
+    },
+    {
+      code: 'SIG_HIGH_S',
+      why: 'The malleable twin. It recovers the same signer, which is why it is refused.',
+      signature: `0x${r}${word(highS)}${flippedV}`,
+    },
+    {
+      code: 'SIG_UNRECOVERABLE',
+      why: 'r is a valid scalar and not the x coordinate of any point with this parity.',
+      signature: `0x${word(BigInt(CURVE_ORDER) - 1n)}${word(1n)}1b`,
+    },
+  ];
+
   // ---------------------------------------------------------------- the 402 envelopes (spec)
 
   const requirementsExtra = {
@@ -585,6 +641,36 @@ async function main(): Promise<void> {
       signer: operator.address,
     })),
     secp256k1: { source: 'SEC 2 section 2.4.1', n: CURVE_ORDER, half_n: HALF_CURVE_ORDER },
+    invalid: {
+      confirmed_by: 'ours' as ConfirmedBy,
+      note:
+        'Every rejection in ADR-0012 as a vector. All three stacks must refuse these for the same ' +
+        'named reason: a policy only the engine enforces is worthless, because the vault settles ' +
+        'the disputes. The codes with EveryStack reach are the ones Solidity declares as custom ' +
+        'errors (ADR-0012, update of 2026-09-24).',
+      digest: receiptDigest,
+      expected_signer: operator.address,
+      codes: invalidSignatures.map((c) => c.code),
+      codes_note:
+        'The same codes as `signatures[].code`, as a flat array: Solidity reads JSON without ' +
+        'JSONPath wildcards, so the count has to come from the file rather than from a constant in ' +
+        'the test.',
+      signatures: invalidSignatures,
+      wrong_signer: {
+        code: 'SIG_WRONG_SIGNER',
+        why:
+          'A valid signature checked against the wrong expected signer. It recovers, to the ' +
+          'operator, which is why "the recovered address is not zero" is never the check.',
+        signature: validSig,
+        expected_signer: agent.address,
+        recovers_to: operator.address,
+      },
+      channel_config: {
+        code: 'X402_WITHDRAW_DELAY_WIDTH',
+        why: 'A withdrawDelay that does not fit uint40 cannot be the config the escrow hashed.',
+        withdraw_delay: '1099511627776',
+      },
+    },
     x402: {
       confirmed_by: 'deployed-contract' as ConfirmedBy,
       confirmed_note:
@@ -731,6 +817,7 @@ async function main(): Promise<void> {
           'for. Each recovers a stranger rather than failing, which is why "the recovered address ' +
           'is not zero" is never the check (ADR-0012). A stranger is a function of the digest AND ' +
           'the signature together: regenerate either and all of these move.',
+        changed_fields: tamperedCases.map((c) => c.changed),
         cases: tamperedCases,
       },
     },

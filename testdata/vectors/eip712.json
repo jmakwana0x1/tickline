@@ -73,6 +73,83 @@
     "n": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
     "half_n": "0x7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0"
   },
+  "invalid": {
+    "confirmed_by": "ours",
+    "note": "Every rejection in ADR-0012 as a vector. All three stacks must refuse these for the same named reason: a policy only the engine enforces is worthless, because the vault settles the disputes. The codes with EveryStack reach are the ones Solidity declares as custom errors (ADR-0012, update of 2026-09-24).",
+    "digest": "0x25df84d4cb1516f85e7c3027f919fe7f51183806ddfeb20837882e7920f30970",
+    "expected_signer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "codes": [
+      "SIG_COMPACT",
+      "SIG_LENGTH",
+      "SIG_RECOVERY_ID",
+      "SIG_R_ZERO",
+      "SIG_S_ZERO",
+      "SIG_R_ABOVE_ORDER",
+      "SIG_S_ABOVE_ORDER",
+      "SIG_HIGH_S",
+      "SIG_UNRECOVERABLE"
+    ],
+    "codes_note": "The same codes as `signatures[].code`, as a flat array: Solidity reads JSON without JSONPath wildcards, so the count has to come from the file rather than from a constant in the test.",
+    "signatures": [
+      {
+        "code": "SIG_COMPACT",
+        "why": "EIP-2098, 64 bytes. A real encoding of a real signature, and not ours.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a037b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a22"
+      },
+      {
+        "code": "SIG_LENGTH",
+        "why": "One byte too many.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a037b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a221b00"
+      },
+      {
+        "code": "SIG_RECOVERY_ID",
+        "why": "v written as a bare recovery id. Rejected, never normalized.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a037b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a2201"
+      },
+      {
+        "code": "SIG_R_ZERO",
+        "why": "A zero scalar is not a signature.",
+        "signature": "0x000000000000000000000000000000000000000000000000000000000000000037b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a221b"
+      },
+      {
+        "code": "SIG_S_ZERO",
+        "why": "A zero scalar is not a signature.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a000000000000000000000000000000000000000000000000000000000000000001b"
+      },
+      {
+        "code": "SIG_R_ABOVE_ORDER",
+        "why": "At the curve order, so not a scalar.",
+        "signature": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414137b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a221b"
+      },
+      {
+        "code": "SIG_S_ABOVE_ORDER",
+        "why": "At the curve order, so not a scalar.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a0fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd03641411b"
+      },
+      {
+        "code": "SIG_HIGH_S",
+        "why": "The malleable twin. It recovers the same signer, which is why it is refused.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a0c84c07c7242239adec706a8331dfd3e535e50311ecec8d78ae1f071058c2f71f1c"
+      },
+      {
+        "code": "SIG_UNRECOVERABLE",
+        "why": "r is a valid scalar and not the x coordinate of any point with this parity.",
+        "signature": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414000000000000000000000000000000000000000000000000000000000000000011b"
+      }
+    ],
+    "wrong_signer": {
+      "code": "SIG_WRONG_SIGNER",
+      "why": "A valid signature checked against the wrong expected signer. It recovers, to the operator, which is why \"the recovered address is not zero\" is never the check.",
+      "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a037b3f838dbddc652138f957cce202c1984c9d9d4c25c12c311b3577c77734a221b",
+      "expected_signer": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "recovers_to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    },
+    "channel_config": {
+      "code": "X402_WITHDRAW_DELAY_WIDTH",
+      "why": "A withdrawDelay that does not fit uint40 cannot be the config the escrow hashed.",
+      "withdraw_delay": "1099511627776"
+    }
+  },
   "x402": {
     "confirmed_by": "deployed-contract",
     "confirmed_note": "Every digest below was read from the escrow on Base Sepolia on 2026-09-26 for exactly these inputs, and reproduced by the SDK. The getter is named per entry so one value can be rechecked with one cast call.",
@@ -237,6 +314,11 @@
     },
     "tampered": {
       "note": "The operator ONE signature from `typical`, checked against a digest it was not made for. Each recovers a stranger rather than failing, which is why \"the recovered address is not zero\" is never the check (ADR-0012). A stranger is a function of the digest AND the signature together: regenerate either and all of these move.",
+      "changed_fields": [
+        "epoch",
+        "nonce",
+        "every field"
+      ],
       "cases": [
         {
           "changed": "epoch",

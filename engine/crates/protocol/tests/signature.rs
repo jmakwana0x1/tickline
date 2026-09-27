@@ -579,3 +579,51 @@ fn the_curve_constants_are_the_secp256k1_ones() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn every_invalid_vector_is_rejected_with_its_code() -> TestResult {
+    // The cross-stack half of ADR-0012: the same bytes, refused for the same named reason in Rust,
+    // Solidity and TypeScript. A policy only the engine enforces is worthless, because the vault
+    // settles the disputes.
+    let vectors = load()?;
+    let invalid = section(&vectors, "invalid")?;
+    let digest = hash(invalid, "digest")?;
+    let expected = address(invalid, "expected_signer")?;
+
+    for case in group(invalid, "signatures")? {
+        let code = text(case, "code")?;
+        let bytes = alloy_primitives::hex::decode(text(case, "signature")?)?;
+
+        let refused = match Signature::from_bytes(&bytes) {
+            Err(error) => error,
+            Ok(signature) => match signature.verify(digest, expected) {
+                Err(error) => error,
+                Ok(()) => return Err(format!("{code} was accepted").into()),
+            },
+        };
+        assert_eq!(refused.code(), code, "{}", text(case, "why")?);
+    }
+
+    // A valid signature against the wrong expected signer: it recovers, to a stranger, which is
+    // the whole reason the check names who must have signed.
+    let wrong = section(invalid, "wrong_signer")?;
+    let signature = Signature::from_bytes(&signature_bytes(wrong, "signature")?)?;
+    let other = address(wrong, "expected_signer")?;
+    let recovered = address(wrong, "recovers_to")?;
+    assert_eq!(
+        signature.verify(digest, other),
+        Err(ProtocolError::WrongSigner {
+            expected: other,
+            recovered
+        })
+    );
+    assert_eq!(
+        ProtocolError::WrongSigner {
+            expected: other,
+            recovered
+        }
+        .code(),
+        text(wrong, "code")?
+    );
+    Ok(())
+}
