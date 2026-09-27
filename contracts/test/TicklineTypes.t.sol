@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
 import {TicklineTypes} from "../src/TicklineTypes.sol";
+import {Test} from "forge-std/Test.sol";
 
 /// @title The Solidity side of the cross-stack vectors (issue #67)
 /// @notice Reads `testdata/vectors/eip712.json`, the same file the Rust and TypeScript suites read,
@@ -152,9 +152,14 @@ contract TicklineTypesTest is Test {
         // deployed escrow's own constants.
         for (uint256 i = 0; i < 4; i++) {
             string memory at = string.concat(".x402.type_hashes[", vm.toString(i), "]");
-            string memory typeString = vm.parseJsonString(vectors, string.concat(at, ".type_string"));
+            string memory typeString =
+                vm.parseJsonString(vectors, string.concat(at, ".type_string"));
             bytes32 expected = vm.parseJsonBytes32(vectors, string.concat(at, ".hash"));
-            assertEq(keccak256(bytes(typeString)), expected, vm.parseJsonString(vectors, string.concat(at, ".name")));
+            assertEq(
+                keccak256(bytes(typeString)),
+                expected,
+                vm.parseJsonString(vectors, string.concat(at, ".name"))
+            );
         }
     }
 
@@ -191,9 +196,7 @@ contract TicklineTypesTest is Test {
         address other = vm.parseJsonAddress(vectors, ".invalid.wrong_signer.expected_signer");
         address recovers = vm.parseJsonAddress(vectors, ".invalid.wrong_signer.recovers_to");
 
-        vm.expectRevert(
-            abi.encodeWithSelector(TicklineTypes.WrongSigner.selector, other, recovers)
-        );
+        vm.expectRevert(abi.encodeWithSelector(TicklineTypes.WrongSigner.selector, other, recovers));
         this.verify(d, signature, other);
     }
 
@@ -232,7 +235,9 @@ contract TicklineTypesTest is Test {
         return TicklineTypes.MarketParams({
             creator: vm.parseJsonAddress(vectors, ".market_id.base.creator"),
             templateId: vm.parseJsonBytes32(vectors, ".market_id.base.template_id"),
-            templateParamsHash: vm.parseJsonBytes32(vectors, ".market_id.base.template_params_hash"),
+            templateParamsHash: vm.parseJsonBytes32(
+                vectors, ".market_id.base.template_params_hash"
+            ),
             deadline: uint64(vm.parseJsonUint(vectors, ".market_id.base.deadline")),
             b: uint128(parseDecimal(".market_id.base.b")),
             epochLength: uint32(vm.parseJsonUint(vectors, ".market_id.base.epoch_length")),

@@ -46,9 +46,9 @@ describe('the committed vectors', () => {
   });
 
   it('pins the SDK exactly, with no range operator', () => {
-    const manifest = JSON.parse(
-      readFileSync(resolve(HERE, '../package.json'), 'utf8'),
-    ) as { dependencies: Record<string, string> };
+    const manifest = JSON.parse(readFileSync(resolve(HERE, '../package.json'), 'utf8')) as {
+      dependencies: Record<string, string>;
+    };
     for (const [pkg, spec] of Object.entries(manifest.dependencies)) {
       expect(spec, `${pkg} must be pinned exactly (Q7)`).toMatch(/^\d+\.\d+\.\d+$/);
     }
@@ -95,11 +95,7 @@ describe('the invalid vectors', () => {
     // cannot do JSONPath wildcards, and a drift between them would silently shrink its coverage.
     expect(v.invalid.codes).toEqual(v.invalid.signatures.map((s) => s.code));
 
-    const all = [
-      ...v.invalid.codes,
-      v.invalid.wrong_signer.code,
-      v.invalid.channel_config.code,
-    ];
+    const all = [...v.invalid.codes, v.invalid.wrong_signer.code, v.invalid.channel_config.code];
     expect(new Set(all).size).toBe(all.length);
     for (const code of all) {
       expect(code, 'every code belongs to a reserved family').toMatch(/^(SIG_|X402_|POLICY_|ENV_)/);

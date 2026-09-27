@@ -39,8 +39,9 @@ library TicklineTypes {
     error WithdrawDelayWidth(uint256 got);
 
     /// @notice The EIP-712 domain type hash.
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
 
     /// @notice `keccak256("Tickline")`, the domain name.
     bytes32 internal constant DOMAIN_NAME_HASH = keccak256("Tickline");
@@ -132,11 +133,11 @@ library TicklineTypes {
     /// @dev Ten words, tag first. The chain and the vault are arguments rather than fields because
     ///      they are properties of the deployment: the same parameters are a different market on a
     ///      different chain or a redeployed vault, so a receipt cannot be replayed across either.
-    function marketId(uint256 chainId, address vault, MarketParams memory params)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function marketId(
+        uint256 chainId,
+        address vault,
+        MarketParams memory params
+    ) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 MARKET_ID_TAG,

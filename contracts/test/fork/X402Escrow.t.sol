@@ -70,7 +70,9 @@ contract X402EscrowForkTest is Test {
             // The committed selector is the one the signature hashes to. If the escrow changes a
             // signature, the generator's value moves and this fails by name.
             assertEq(
-                committed, bytes4(keccak256(bytes(signature))), string.concat("selector for ", signature)
+                committed,
+                bytes4(keccak256(bytes(signature))),
+                string.concat("selector for ", signature)
             );
 
             // And a zero-argument getter must answer at it.
@@ -120,10 +122,13 @@ contract X402EscrowForkTest is Test {
             "channel 2"
         );
 
-        uint128 ceiling =
-            uint128(vm.parseUint(vm.parseJsonString(vectors, ".x402.vouchers[0].max_claimable_amount")));
+        uint128 ceiling = uint128(
+            vm.parseUint(vm.parseJsonString(vectors, ".x402.vouchers[0].max_claimable_amount"))
+        );
         (bool ok, bytes memory data) = ESCROW.staticcall(
-            abi.encodeWithSelector(bytes4(keccak256("getVoucherDigest(bytes32,uint128)")), firstId, ceiling)
+            abi.encodeWithSelector(
+                bytes4(keccak256("getVoucherDigest(bytes32,uint128)")), firstId, ceiling
+            )
         );
         assertTrue(ok, "no getVoucherDigest");
         assertEq(
@@ -146,7 +151,11 @@ contract X402EscrowForkTest is Test {
         assertEq(config.receiver, operator, "the operator receives");
 
         bytes memory call = abi.encodeWithSelector(
-            bytes4(keccak256("initiateWithdraw((address,address,address,address,address,uint40,bytes32),uint128)")),
+            bytes4(
+                keccak256(
+                    "initiateWithdraw((address,address,address,address,address,uint40,bytes32),uint128)"
+                )
+            ),
             config,
             uint128(1)
         );
@@ -187,7 +196,11 @@ contract X402EscrowForkTest is Test {
     function getChannelId(ChannelConfig memory config) internal view returns (bytes32) {
         (bool ok, bytes memory data) = ESCROW.staticcall(
             abi.encodeWithSelector(
-                bytes4(keccak256("getChannelId((address,address,address,address,address,uint40,bytes32))")),
+                bytes4(
+                    keccak256(
+                        "getChannelId((address,address,address,address,address,uint40,bytes32))"
+                    )
+                ),
                 config
             )
         );
@@ -200,7 +213,9 @@ contract X402EscrowForkTest is Test {
             payer: vm.parseJsonAddress(vectors, string.concat(at, ".payer")),
             payerAuthorizer: vm.parseJsonAddress(vectors, string.concat(at, ".payer_authorizer")),
             receiver: vm.parseJsonAddress(vectors, string.concat(at, ".receiver")),
-            receiverAuthorizer: vm.parseJsonAddress(vectors, string.concat(at, ".receiver_authorizer")),
+            receiverAuthorizer: vm.parseJsonAddress(
+                vectors, string.concat(at, ".receiver_authorizer")
+            ),
             token: vm.parseJsonAddress(vectors, string.concat(at, ".token")),
             withdrawDelay: uint40(vm.parseJsonUint(vectors, string.concat(at, ".withdraw_delay"))),
             salt: vm.parseJsonBytes32(vectors, string.concat(at, ".salt"))

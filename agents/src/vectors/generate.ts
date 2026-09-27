@@ -137,7 +137,11 @@ function marketId(params: {
 
 function pythThresholdParamsHash(priceId: Hex, threshold: bigint, direction: 0 | 1): Hex {
   return keccak256(
-    encodeAbiParameters(parseAbiParameters('bytes32, int64, uint8'), [priceId, threshold, direction]),
+    encodeAbiParameters(parseAbiParameters('bytes32, int64, uint8'), [
+      priceId,
+      threshold,
+      direction,
+    ]),
   );
 }
 
@@ -488,8 +492,16 @@ async function main(): Promise<void> {
       why: 'v written as a bare recovery id. Rejected, never normalized.',
       signature: `0x${r}${sHex}01`,
     },
-    { code: 'SIG_R_ZERO', why: 'A zero scalar is not a signature.', signature: `0x${zero}${sHex}${vHex}` },
-    { code: 'SIG_S_ZERO', why: 'A zero scalar is not a signature.', signature: `0x${r}${zero}${vHex}` },
+    {
+      code: 'SIG_R_ZERO',
+      why: 'A zero scalar is not a signature.',
+      signature: `0x${zero}${sHex}${vHex}`,
+    },
+    {
+      code: 'SIG_S_ZERO',
+      why: 'A zero scalar is not a signature.',
+      signature: `0x${r}${zero}${vHex}`,
+    },
     {
       code: 'SIG_R_ABOVE_ORDER',
       why: 'At the curve order, so not a scalar.',
@@ -725,7 +737,8 @@ async function main(): Promise<void> {
       ],
       claim_entries: claimEntries.map((entry, index) => {
         const structHash = entryStructHashes.at(index);
-        if (structHash === undefined) throw new Error(`no struct hash for entry ${index.toString()}`);
+        if (structHash === undefined)
+          throw new Error(`no struct hash for entry ${index.toString()}`);
         return {
           name: entry.name,
           channel_id: entry.channelId,
@@ -835,7 +848,7 @@ async function main(): Promise<void> {
         why:
           'An ENCODING test and nothing more. Every field at its type maximum is well formed and ' +
           'economically impossible: Q_MAX caps shares far below this (Phase 4) and the vault ' +
-          "solvency check caps payouts (Phase 3). The engine must never sign one.",
+          'solvency check caps payouts (Phase 3). The engine must never sign one.',
         market_id: atMax.marketId,
         agent: atMax.agent,
         yes_shares: U128_MAX,
@@ -920,8 +933,7 @@ async function main(): Promise<void> {
           chain_id: CHAIN_ID,
           vault: '0x000000000000000000000000000000000000dEaD',
           market_id: marketIdOn(CHAIN_ID, '0x000000000000000000000000000000000000dEaD', market),
-          why:
-            'Identical market parameters. A redeployed vault must not inherit the old market ids.',
+          why: 'Identical market parameters. A redeployed vault must not inherit the old market ids.',
         },
       ],
     },
@@ -1058,11 +1070,7 @@ function snakeConfig(config: {
 }
 
 /** A market id on an arbitrary chain and vault, for the domain-separation variants. */
-function marketIdOn(
-  chainId: number,
-  vault: Address,
-  params: Parameters<typeof marketId>[0],
-): Hex {
+function marketIdOn(chainId: number, vault: Address, params: Parameters<typeof marketId>[0]): Hex {
   return keccak256(
     encodeAbiParameters(
       parseAbiParameters(
