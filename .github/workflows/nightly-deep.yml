@@ -34,6 +34,31 @@ jobs:
       - run: just migrate
       - run: just deep
 
+  # The fork suite reads the deployed escrow, so it runs here and in phase-gate, never per PR (#67).
+  fork:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: ./.github/actions/setup
+        with: { node: 'false', sqlx: 'false' }
+      # An outage is not a finding, so it warns rather than opening an issue claiming the escrow
+      # changed. A disagreement fails, and the report job turns that into one (#80, condition 2).
+      - name: fork suite against the deployed escrow
+        env:
+          BASE_SEPOLIA_RPC_URL: ${{ secrets.BASE_SEPOLIA_RPC_URL }}
+        run: |
+          set +e
+          just test-fork
+          code=$?
+          set -e
+          case "$code" in
+            0)  echo "::notice::the deployment agrees with the committed vectors" ;;
+            75) echo "::warning::could not reach Base Sepolia; the fork suite did not run" ;;
+            *)  exit "$code" ;;
+          esac
+
   mutants:
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -45,8 +70,8 @@ jobs:
       - run: just mutants
 
   report:
-    if: always() && (needs.deep.result == 'failure' || needs.mutants.result == 'failure')
-    needs: [deep, mutants]
+    if: always() && (needs.deep.result == 'failure' || needs.mutants.result == 'failure' || needs.fork.result == 'failure')
+    needs: [deep, mutants, fork]
     runs-on: ubuntu-latest
     permissions: { issues: write }
     steps:

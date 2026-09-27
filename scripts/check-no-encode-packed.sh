@@ -10,21 +10,44 @@
 # structHash)` does the same job with fixed-width inputs and no ambiguity, and Solidity has had it
 # since 0.8.4. We pin 0.8.28.
 #
-# `lib/` is excluded: forge-std is vendored and uses encodePacked for string building, which is not
-# a hash preimage and not ours to change.
+# Comments are not code: the ban is explained in doc comments that name the thing they ban, so only
+# real uses count. `lib/` is vendored (forge-std builds strings with it) and `out/` and `cache/` are
+# build products.
 #
 # Usage: check-no-encode-packed.sh [contracts-dir]
 set -euo pipefail
 dir="${1:-$(cd "$(dirname "$0")/.." && pwd -P)/contracts}"
 [[ -d "$dir" ]] || { echo "✗ no such directory: $dir" >&2; exit 2; }
 
-found=0
-while IFS= read -r -d '' file; do
-  if grep -n 'abi\.encodePacked' "$file"; then
-    echo "✗ $file uses abi.encodePacked; use abi.encode, or bytes.concat for fixed-width framing" >&2
-    found=1
-  fi
-done < <(find "$dir" -name '*.sol' -not -path '*/lib/*' -print0)
+python3 - "$dir" <<'PY'
+import re
+import sys
+from pathlib import Path
 
-(( found == 0 )) || exit 1
-echo "✓ no abi.encodePacked in our Solidity"
+root = Path(sys.argv[1])
+SKIP = {"lib", "out", "cache", "broadcast", "node_modules"}
+
+# Strip line comments and block comments, then look for a real call.
+LINE_COMMENT = re.compile(r"//.*$", re.M)
+BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+CALL = re.compile(r"\babi\.encodePacked\s*\(")
+
+problems = []
+for path in sorted(root.rglob("*.sol")):
+    if SKIP & set(path.relative_to(root).parts):
+        continue
+    source = path.read_text()
+    code = LINE_COMMENT.sub("", BLOCK_COMMENT.sub("", source))
+    if CALL.search(code):
+        # Report the line numbers from the original, so the message points at real source.
+        for number, line in enumerate(source.splitlines(), start=1):
+            if CALL.search(LINE_COMMENT.sub("", line)):
+                problems.append(f"{path}:{number}: {line.strip()}")
+
+for problem in problems:
+    print(f"✗ {problem}", file=sys.stderr)
+if problems:
+    print("use abi.encode, or bytes.concat for fixed-width framing", file=sys.stderr)
+    sys.exit(1)
+print("✓ no abi.encodePacked in our Solidity")
+PY

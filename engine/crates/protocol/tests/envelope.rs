@@ -1,6 +1,6 @@
 //! The x402 V2 envelopes (issue #66), against the shapes quoted in `docs/spec-notes.md` §3.
 //!
-//! **Provenance.** `testdata/vectors/eip712-primitives.json` carries the spec's own shapes, taken
+//! **Provenance.** `testdata/vectors/eip712.json` carries the spec's own shapes, taken
 //! from `scheme_batch_settlement_evm.md` rather than from a summary of it. There is nothing to read
 //! off a contract here: this is the HTTP surface, so the spec is the source and the committed
 //! fixture is what keeps our reading of it honest.

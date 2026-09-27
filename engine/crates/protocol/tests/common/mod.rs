@@ -1,4 +1,4 @@
-//! Loader for `testdata/vectors/eip712-primitives.json` (issue #62).
+//! Loader for `testdata/vectors/eip712.json` (issue #62).
 //!
 //! The fixtures live in a file rather than in the test source for two reasons. `.gitleaks.toml`
 //! cannot tell a 32-byte hash from a 32-byte private key, so every hex literal in a `.rs` file is
@@ -18,9 +18,10 @@ pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 /// copies only `engine/` to a scratch directory, where the relative path would not resolve.
 pub fn vectors_path() -> PathBuf {
     match std::env::var_os("TICKLINE_VECTORS_DIR") {
-        Some(dir) => PathBuf::from(dir).join("eip712-primitives.json"),
-        None => PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../testdata/vectors/eip712-primitives.json"),
+        Some(dir) => PathBuf::from(dir).join("eip712.json"),
+        None => {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../testdata/vectors/eip712.json")
+        }
     }
 }
 
@@ -64,6 +65,21 @@ pub fn signature_bytes(value: &serde_json::Value, key: &str) -> TestResult<[u8; 
     }
     out.copy_from_slice(&decoded);
     Ok(out)
+}
+
+/// A named field holding an unsigned integer, as a JSON number **or** a decimal string.
+///
+/// Both encodings exist in the vector file for a reason: a JSON number is an IEEE double, so
+/// `u64::MAX` cannot be one without losing precision, and the generator writes anything that wide
+/// as a string. Accepting both keeps the reader honest about which values JSON can carry.
+pub fn integer(value: &serde_json::Value, key: &str) -> TestResult<u64> {
+    match value.get(key) {
+        Some(serde_json::Value::Number(n)) => n
+            .as_u64()
+            .ok_or_else(|| format!("fixture field '{key}' is not an unsigned integer").into()),
+        Some(serde_json::Value::String(s)) => Ok(s.parse::<u64>()?),
+        _ => Err(format!("fixture field '{key}' is missing").into()),
+    }
 }
 
 /// A named field that must be an unsigned integer.

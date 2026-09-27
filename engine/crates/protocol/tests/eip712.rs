@@ -1,6 +1,6 @@
 //! EIP-712 primitives, against values computed outside this crate (issue #62).
 //!
-//! **Provenance.** Every expected value comes from `testdata/vectors/eip712-primitives.json`,
+//! **Provenance.** Every expected value comes from `testdata/vectors/eip712.json`,
 //! produced with foundry `cast` 1.8.1 on 2026-09-24, so these assertions are a diff against the
 //! EVM's own tooling rather than against this crate's arithmetic. The file records the exact
 //! commands. #67 replaces it with the generated cross-stack vectors, which viem writes and forge

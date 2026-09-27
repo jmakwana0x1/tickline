@@ -82,6 +82,42 @@ runs:
         echo "$dest" >> "$GITHUB_PATH"
         "$dest/forge" --version
 
+    # solc is fetched by forge on first compile, from binaries.soliditylang.org, and that fetch is
+    # the same single point of failure the foundry download was before #11: a connection reset there
+    # failed the `sol` job on #80 with nothing wrong in the repository.
+    #
+    # So it is cached by version and warmed with retries. The version comes from foundry.toml, which
+    # stays the one place it is pinned.
+    - name: read the pinned solc version
+      id: solc
+      if: inputs.foundry == 'true'
+      shell: bash
+      run: |
+        version="$(sed -n 's/^solc_version = "\(.*\)"/\1/p' contracts/foundry.toml | head -1)"
+        [[ -n "$version" ]] || { echo "no solc_version in contracts/foundry.toml" >&2; exit 1; }
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v4
+      if: inputs.foundry == 'true'
+      with:
+        path: ~/.svm
+        key: svm-${{ runner.os }}-solc-${{ steps.solc.outputs.version }}
+
+    - name: solc (pinned in foundry.toml), warmed and retried
+      if: inputs.foundry == 'true'
+      shell: bash
+      run: |
+        set -uo pipefail
+        for attempt in 1 2 3; do
+          if (cd contracts && forge build --silent); then
+            exit 0
+          fi
+          echo "::warning::solc fetch or first build attempt $attempt failed, retrying"
+          sleep $(( attempt * 5 ))
+        done
+        echo "::error::could not fetch solc ${{ steps.solc.outputs.version }} after three attempts" >&2
+        exit 1
+
     # Pinned by commit (v10.1.0) and by uv version.
     - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
       if: inputs.uv == 'true'

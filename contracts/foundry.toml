@@ -56,11 +56,25 @@ runs = 5000
 depth = 512
 fail_on_revert = true
 
-# Phase 8 only. The single suite allowed to touch the network.
+# The single suite allowed to touch the network (CLAUDE.md section 2), from #67.
+#
+# No eth_rpc_url here: this Foundry does not interpolate ${VAR} into it, and an uninterpolated value
+# is treated as a file path, which fails before any test runs. The suite reads
+# BASE_SEPOLIA_RPC_URL itself with vm.envString, so there is one place the endpoint comes from.
 [profile.fork]
-no_match_path = ""
+# no_match_path is inherited from [profile.default], which excludes exactly this directory, so it
+# is pointed at a path that does not exist rather than left to exclude the suite it is selecting.
+no_match_path = "test/nothing-is-here/*"
 match_path = "test/fork/*"
-eth_rpc_url = "${BASE_SEPOLIA_RPC_URL}"
+
+# forge-lint, new in Foundry 1.8, and pointed at production Solidity only.
+#
+# Its loop, low-level-call and typecast rules are gas and safety advice for deployed code. A
+# cross-stack vector reader is loops of staticcalls and casts of committed fixtures by construction,
+# so in `test/` those rules fire 67 times and say nothing: the inputs are a file we generated, not a
+# caller. `src/` keeps every rule, which is where the advice is worth taking.
+[lint]
+ignore = ["test/**/*.sol"]
 
 [fmt]
 line_length = 100

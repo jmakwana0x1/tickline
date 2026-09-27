@@ -74,6 +74,8 @@ lint:
     @bash scripts/check-vector-secrets.sh
     @bash scripts/test-no-encode-packed.sh
     @bash scripts/check-no-encode-packed.sh
+    # The fork suite's own classification, provable without the network (#80).
+    @bash scripts/test-fork-suite.sh
 
 # Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
 # staged files, so this is the check to run before a push, and after any history rewrite (#72).
@@ -144,6 +146,16 @@ vectors-lmsr:
 vectors-eip712:
     pnpm --filter @tickline/agents run vectors
     @bash scripts/check-vectors-committed.sh testdata/vectors/eip712.json
+    # Last, so a key-ish field fails at generation rather than two steps downstream in lint (#67).
+    @bash scripts/check-vector-secrets.sh
+
+# The only suite allowed network access (CLAUDE.md section 2). Needs BASE_SEPOLIA_RPC_URL.
+#
+# --force is not optional: forge caches which tests it found per profile, and without it a run that
+# selected the fork profile after a default-profile run reports "No tests found" while `--list`
+# happily shows all five (#67).
+test-fork:
+    @bash scripts/fork-suite.sh
 
 slither:
     cd {{contracts}} && slither . --config-file slither.config.json

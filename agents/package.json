@@ -10,7 +10,9 @@
     "vectors": "tsx src/vectors/generate.ts --out ../testdata/vectors/eip712.json"
   },
   "dependencies": {
-    "viem": "^2.21.44"
+    "@x402/core": "2.27.0",
+    "@x402/evm": "2.27.0",
+    "viem": "2.56.9"
   },
   "devDependencies": {
     "tsx": "^4.19.2"
