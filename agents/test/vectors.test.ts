@@ -130,3 +130,73 @@ describe('the invalid vectors', () => {
     }
   });
 });
+
+describe('the rule order', () => {
+  it('is stated in the file, and is not the published code order', () => {
+    // SIGNATURE_ERROR_CODES is a published set whose array order is the enum's declaration order.
+    // The order the rules are *checked* in is different, and a reader could take one for the other,
+    // so both live in the file and this asserts they differ (Jay, on #80).
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as {
+      invalid: {
+        codes: string[];
+        check_order: string[];
+        precedence: Array<{ code: string; violations: string[]; signature: string }>;
+        precedence_codes: string[];
+      };
+    };
+
+    expect(v.invalid.check_order).toEqual([
+      'SIG_COMPACT',
+      'SIG_LENGTH',
+      'SIG_RECOVERY_ID',
+      'SIG_R_ZERO',
+      'SIG_R_ABOVE_ORDER',
+      'SIG_S_ZERO',
+      'SIG_S_ABOVE_ORDER',
+      'SIG_HIGH_S',
+    ]);
+
+    // Every ordered rule is a published code, and exactly one published code is NOT in the order:
+    // SIG_UNRECOVERABLE is decided after every syntactic check has passed, by recovery itself, so it
+    // has no position among them. Naming it here is the point; a plain set comparison would have
+    // hidden why the two lists differ in length.
+    for (const code of v.invalid.check_order) {
+      expect(v.invalid.codes).toContain(code);
+    }
+    const outsideTheOrder = v.invalid.codes.filter((c) => !v.invalid.check_order.includes(c));
+    expect(outsideTheOrder).toEqual(['SIG_UNRECOVERABLE']);
+    expect(v.invalid.check_order).not.toEqual(v.invalid.codes);
+  });
+
+  it('is exercised by cases that break more than one rule', () => {
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as {
+      invalid: {
+        check_order: string[];
+        precedence: Array<{ code: string; violations: string[]; signature: string }>;
+        precedence_codes: string[];
+      };
+    };
+
+    expect(v.invalid.precedence_codes).toEqual(v.invalid.precedence.map((c) => c.code));
+    for (const entry of v.invalid.precedence) {
+      // A single-violation case says nothing about order, which is why every other invalid vector
+      // could not catch a reordering.
+      expect(
+        entry.violations.length,
+        `${entry.code} must break more than one rule`,
+      ).toBeGreaterThan(1);
+      expect(v.invalid.check_order).toContain(entry.code);
+    }
+
+    // Each case's code must be the earliest of the rules it breaks, which is the claim being made.
+    const position = (code: string): number => v.invalid.check_order.indexOf(code);
+    expect(position('SIG_COMPACT')).toBeLessThan(position('SIG_R_ZERO'));
+    expect(position('SIG_R_ZERO')).toBeLessThan(position('SIG_S_ZERO'));
+    expect(position('SIG_R_ABOVE_ORDER')).toBeLessThan(position('SIG_S_ZERO'));
+    expect(position('SIG_RECOVERY_ID')).toBeLessThan(position('SIG_HIGH_S'));
+  });
+});

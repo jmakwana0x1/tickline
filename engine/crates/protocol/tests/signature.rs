@@ -648,7 +648,10 @@ fn the_first_rule_violated_is_the_one_reported() -> TestResult {
 
         // Each of these breaks at least two rules, so the code says which check ran first.
         let violations = group(case, "violations")?;
-        assert!(violations.len() >= 2, "{code} must break more than one rule to say anything");
+        assert!(
+            violations.len() >= 2,
+            "{code} must break more than one rule to say anything"
+        );
 
         let refused = match Signature::from_bytes(&bytes) {
             Err(error) => error,
@@ -669,22 +672,35 @@ fn the_published_code_list_is_a_set_and_not_an_order() -> TestResult {
     // easily take one for the other (Jay, on #80). ADR-0012 says so; this makes it observable.
     let vectors = load()?;
     let check_order = group(section(&vectors, "invalid")?, "check_order")?;
-    assert_eq!(check_order.len(), 8, "eight rules, in the order they are applied");
+    assert_eq!(
+        check_order.len(),
+        8,
+        "eight rules, in the order they are applied"
+    );
 
     let published: Vec<&str> = SIGNATURE_ERROR_CODES.to_vec();
-    let ordered: Vec<&str> =
-        check_order.iter().map(|c| c.as_str().unwrap_or_default()).collect();
+    let ordered: Vec<&str> = check_order
+        .iter()
+        .map(|c| c.as_str().unwrap_or_default())
+        .collect();
 
     // Every rule in the check order is a published code.
     for code in &ordered {
-        assert!(published.contains(code), "{code} is not in SIGNATURE_ERROR_CODES");
+        assert!(
+            published.contains(code),
+            "{code} is not in SIGNATURE_ERROR_CODES"
+        );
     }
 
     // And the two sequences differ, which is the whole point: if they ever coincide, this test
     // still passes, but the assertion above keeps the sets aligned and ADR-0012 keeps the order.
     assert_ne!(
         ordered,
-        published.iter().take(ordered.len()).copied().collect::<Vec<_>>(),
+        published
+            .iter()
+            .take(ordered.len())
+            .copied()
+            .collect::<Vec<_>>(),
         "the published list is declaration order, not check order; ADR-0012 states the latter"
     );
     Ok(())

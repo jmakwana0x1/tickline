@@ -534,6 +534,49 @@ async function main(): Promise<void> {
     },
   ];
 
+  // Multi-violation cases, which are the only ones that say anything about ORDER. Every case above
+  // breaks exactly one rule, so reordering either stack leaves them all passing while Rust and
+  // Solidity hand a client two different codes for identical bytes (Jay, on #80).
+  const precedence = [
+    {
+      code: 'SIG_COMPACT',
+      violations: ['64 bytes', 'r is zero', 's is zero'],
+      why: 'Length is decided before the scalars are looked at, so a 64-byte buffer of zeros is a compact signature and not a zero r.',
+      signature: `0x${word(0n)}${word(0n)}`,
+    },
+    {
+      code: 'SIG_R_ZERO',
+      violations: ['r is zero', 's is at the curve order'],
+      why: 'r is checked before s.',
+      signature: `0x${word(0n)}${word(CURVE_ORDER)}${vHex}`,
+    },
+    {
+      code: 'SIG_R_ABOVE_ORDER',
+      violations: ['r is at the curve order', 's is zero'],
+      why: 'r before s again, and within r, zero before range: r is not zero here, so the range check is what fires.',
+      signature: `0x${word(CURVE_ORDER)}${word(0n)}${vHex}`,
+    },
+    {
+      code: 'SIG_RECOVERY_ID',
+      violations: ['v is a bare recovery id', 's is above n/2'],
+      why: 'v is checked before any scalar, so a 0/1 recovery id is reported even when s is malleable.',
+      signature: `0x${r}${word(highS)}00`,
+    },
+  ];
+
+  // The order the rules are applied, as ADR-0012 states it. Not the same sequence as
+  // SIGNATURE_ERROR_CODES, which is declaration order, and the difference is the trap.
+  const checkOrder = [
+    'SIG_COMPACT',
+    'SIG_LENGTH',
+    'SIG_RECOVERY_ID',
+    'SIG_R_ZERO',
+    'SIG_R_ABOVE_ORDER',
+    'SIG_S_ZERO',
+    'SIG_S_ABOVE_ORDER',
+    'SIG_HIGH_S',
+  ];
+
   // ---------------------------------------------------------------- the 402 envelopes (spec)
 
   const requirementsExtra = {
@@ -677,6 +720,13 @@ async function main(): Promise<void> {
       digest: receiptDigest,
       expected_signer: operator.address,
       codes: invalidSignatures.map((c) => c.code),
+      precedence,
+      precedence_codes: precedence.map((c) => c.code),
+      check_order: checkOrder,
+      check_order_note:
+        'The order the rules are applied (ADR-0012). SIGNATURE_ERROR_CODES is the published SET of ' +
+        'codes and its array order is the enum declaration order, which is not this. A reader could ' +
+        'take one for the other, so both are in the file and a test asserts they differ.',
       codes_note:
         'The same codes as `signatures[].code`, as a flat array: Solidity reads JSON without ' +
         'JSONPath wildcards, so the count has to come from the file rather than from a constant in ' +

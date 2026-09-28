@@ -155,3 +155,45 @@ declare their reach when they are first used.
 The registry test therefore checks reach per family rather than assuming every code is universal,
 and #67's vector file records each family's reach so the Solidity and TypeScript sides know which
 codes they are obliged to carry.
+
+## Update, 2026-09-28
+
+Made at Jay's direction on #80. Appended rather than edited, per ADR-0001: the policy above did not
+change, and this states something it left implicit.
+
+**The order the rules are checked in, which is part of the decision:**
+
+1. exactly 64 bytes, an EIP-2098 compact signature (`SIG_COMPACT`)
+2. any other wrong length (`SIG_LENGTH`)
+3. `v` outside {27, 28} (`SIG_RECOVERY_ID`)
+4. `r` is zero (`SIG_R_ZERO`)
+5. `r` is at or above the curve order (`SIG_R_ABOVE_ORDER`)
+6. `s` is zero (`SIG_S_ZERO`)
+7. `s` is at or above the curve order (`SIG_S_ABOVE_ORDER`)
+8. `s` is above `n/2` (`SIG_HIGH_S`)
+
+`SIG_UNRECOVERABLE` has no position in this list: it is decided after every rule above has passed, by
+recovery itself. `SIG_WRONG_SIGNER` likewise, one step later still, when the recovered address is
+compared to the expected one.
+
+Two of these are substantive rather than arbitrary. **Length before the scalars**, so a 64-byte buffer
+of zeros is reported as a compact signature and not as a zero `r`: the client's mistake is the
+encoding, not the value. **Range before malleability within `s`**, so `s >= n` is reported as out of
+range rather than as high-s: a value that is not a scalar cannot meaningfully be called the wrong half
+of the curve.
+
+**`SIGNATURE_ERROR_CODES` is a published set, not a precedence order.** Its array order is the order
+the `ProtocolError` variants are declared, which is deliberately not the list above, and a reader could
+easily take one for the other. The set is what the three stacks must agree exists; the list above is
+what they must agree on the sequence of.
+
+### Why it needed writing down
+
+Both stacks already checked in this order, and nothing asserted it. Every invalid vector broke exactly
+one rule, so reordering either implementation left all of them passing while Rust and Solidity handed
+a client two different codes for identical bytes, which is exactly the divergence the cross-stack
+vectors exist to catch.
+
+Four multi-violation vectors now pin it, run by all three stacks, and the guard was checked by
+swapping `r` and `s` in the Solidity library: `ScalarSAboveOrder()` where the vectors say
+`ScalarRZero()`, a failure in one line.

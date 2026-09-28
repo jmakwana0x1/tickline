@@ -190,6 +190,29 @@ contract TicklineTypesTest is Test {
         }
     }
 
+    /// @notice The first rule violated is the one reported, and Solidity agrees with Rust on which.
+    /// @dev Every other invalid vector breaks exactly one rule, so nothing asserted the order until
+    ///      this test: reorder either stack and all of them still pass, while a client gets two
+    ///      different codes for identical bytes. ADR-0012 states the order as a numbered list.
+    function test_TheFirstRuleViolatedIsTheOneReported() public {
+        bytes32 d = vm.parseJsonBytes32(vectors, ".invalid.digest");
+        address expected = vm.parseJsonAddress(vectors, ".invalid.expected_signer");
+        string[] memory codes = vm.parseJsonStringArray(vectors, ".invalid.precedence_codes");
+        assertEq(codes.length, 4, "one case per ordering decision");
+
+        for (uint256 i = 0; i < codes.length; i++) {
+            string memory at = string.concat(".invalid.precedence[", vm.toString(i), "]");
+            assertEq(
+                vm.parseJsonString(vectors, string.concat(at, ".code")),
+                codes[i],
+                "the flat code list and the entries are one list"
+            );
+            bytes memory signature = vm.parseJsonBytes(vectors, string.concat(at, ".signature"));
+            vm.expectPartialRevert(selectorFor(codes[i]));
+            this.verify(d, signature, expected);
+        }
+    }
+
     function test_WrongSignerIsRejectedByName() public {
         bytes32 d = vm.parseJsonBytes32(vectors, ".invalid.digest");
         bytes memory signature = vm.parseJsonBytes(vectors, ".invalid.wrong_signer.signature");
