@@ -12,8 +12,15 @@ cd "$(dirname "$0")/.." || exit 1
 suite="$PWD/scripts/fork-suite.sh"
 tmp_base="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
 created=()
+created_files=()
 cleanup() {
-  local dir
+  local dir file
+  for file in "${created_files[@]}"; do
+    case "$file" in
+      "$tmp_base"/tmp.*) rm -f -- "$file" ;;
+      *) echo "refusing to delete unexpected path: $file" >&2 ;;
+    esac
+  done
   for dir in "${created[@]}"; do
     case "$dir" in
       "$tmp_base"/tmp.*) rm -rf -- "$dir" ;;
@@ -79,8 +86,11 @@ kill "$server" 2>/dev/null || true
 # test is whether a failing run is reported as a disagreement, with the test named.
 report_case() { # <label> <want-exit> <report-json> [grep-for]
   local label="$1" want="$2" report="$3" needle="${4:-}"
-  local out status=0
-  out="$(FORK_REPORT="$report" python3 scripts/parse-fork-report.py 5 1 2>&1)" || status=$?
+  local out status=0 file
+  file="$(mktemp)"
+  created_files+=("$file")
+  printf '%s' "$report" > "$file"
+  out="$(python3 scripts/parse-fork-report.py "$file" 5 1 2>&1)" || status=$?
   local ok=1
   (( status == want )) || ok=0
   if [[ -n "$needle" ]] && ! printf '%s' "$out" | grep -q -- "$needle"; then ok=0; fi

@@ -75,7 +75,14 @@ status=$?
 # Redacted after capture, because the endpoint carries an API key and this output reaches CI logs.
 output="$(printf '%s' "$output" | redact)"
 
-# Through the environment, never through the parser's source. Interpolating the report into an
-# unquoted heredoc made forge's output part of the program, so an escaped quote in a revert reason
-# stopped being JSON before it was parsed, and only ever on a failing run (#82).
-FORK_REPORT="$output" python3 scripts/parse-fork-report.py "$EXPECTED_FORK_TESTS" "$status"
+# Through a file, never through the parser's source. Interpolating the report into an unquoted
+# heredoc made forge's output part of the program, so an escaped quote in a revert reason stopped
+# being JSON before it was parsed, and only ever on a failing run (#82). A file rather than an
+# environment entry because a single environ string is capped at 128 KiB, and the largest report is
+# the failing one with traces (#84).
+#
+# Only this file is ever deleted, and only the one mktemp created.
+report="$(mktemp)"
+trap 'rm -f -- "$report"' EXIT
+printf '%s' "$output" > "$report"
+python3 scripts/parse-fork-report.py "$report" "$EXPECTED_FORK_TESTS" "$status"

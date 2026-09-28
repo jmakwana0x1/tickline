@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Turns forge's fork report into one of the fork suite's outcomes (#67, fixed in #82).
 
-Usage: FORK_REPORT=<forge output> parse-fork-report.py <expected-test-count> <forge-exit-status>
+Usage: parse-fork-report.py <report-file> <expected-test-count> <forge-exit-status>
 
 Exit codes match `scripts/fork-suite.sh`: 0 agreed, 1 disagreed, 2 misconfigured.
 
-**The report arrives through the environment, never through this file's source.** It used to be
+**The report arrives as a file, never as this file's source.** It used to be
 interpolated into an unquoted heredoc, which made forge's output part of the program text: Python
 then processed the escapes in a triple-quoted literal, so a revert reason carrying `\\"` stopped
 being valid JSON before `json.loads` ever saw it, and a `\"\"\"` anywhere ended the literal outright.
@@ -14,21 +14,30 @@ That failed only when a test failed, which is the one time the output matters: a
 was reported as "no JSON report" with a truncated tail instead of naming the test. Jay found it
 reviewing #80. A separate file is also what lets the self-test drive this directly, with a canned
 report and no network.
+
+A file rather than an environment entry because Linux caps a single `environ` string at
+`MAX_ARG_STRLEN`, 128 KiB, and exceeding it fails the `exec` with `E2BIG` before the parser runs. The
+largest report is a failing one with decoded traces, which is the same "breaks exactly when it
+matters" shape this script was written to remove (Jay, on #84).
 """
 
 import json
-import os
 import sys
+from pathlib import Path
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        print(f"usage: {sys.argv[0]} <expected-test-count> <forge-exit-status>", file=sys.stderr)
+    if len(sys.argv) != 4:
+        print(
+            f"usage: {sys.argv[0]} <report-file> <expected-test-count> <forge-exit-status>",
+            file=sys.stderr,
+        )
         return 2
-    expected, status = int(sys.argv[1]), int(sys.argv[2])
-    raw = os.environ.get("FORK_REPORT")
-    if raw is None:
-        print("✗ FORK_REPORT is not set", file=sys.stderr)
+    report, expected, status = Path(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
+    try:
+        raw = report.read_text(encoding="utf-8", errors="replace")
+    except OSError as error:
+        print(f"✗ cannot read the report at {report}: {error}", file=sys.stderr)
         return 2
 
     suites = last_json_object(raw)
