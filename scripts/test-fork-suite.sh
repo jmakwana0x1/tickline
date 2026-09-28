@@ -12,8 +12,15 @@ cd "$(dirname "$0")/.." || exit 1
 suite="$PWD/scripts/fork-suite.sh"
 tmp_base="$(cd "${TMPDIR:-/tmp}" && pwd -P)"
 created=()
+created_files=()
 cleanup() {
-  local dir
+  local dir file
+  for file in "${created_files[@]}"; do
+    case "$file" in
+      "$tmp_base"/tmp.*) rm -f -- "$file" ;;
+      *) echo "refusing to delete unexpected path: $file" >&2 ;;
+    esac
+  done
   for dir in "${created[@]}"; do
     case "$dir" in
       "$tmp_base"/tmp.*) rm -rf -- "$dir" ;;
@@ -73,5 +80,48 @@ server=$!
 sleep 1
 expect "an endpoint on the wrong chain is a misconfiguration" 2 BASE_SEPOLIA_RPC_URL=http://127.0.0.1:8599/
 kill "$server" 2>/dev/null || true
+
+# The disagreement path, which the suite exists for and which nothing here covered until #82. The
+# report is fed straight to the parser, so no network and no forge run is involved: what is under
+# test is whether a failing run is reported as a disagreement, with the test named.
+report_case() { # <label> <want-exit> <report-json> [grep-for]
+  local label="$1" want="$2" report="$3" needle="${4:-}"
+  local out status=0 file
+  file="$(mktemp)"
+  created_files+=("$file")
+  printf '%s' "$report" > "$file"
+  out="$(python3 scripts/parse-fork-report.py "$file" 5 1 2>&1)" || status=$?
+  local ok=1
+  (( status == want )) || ok=0
+  if [[ -n "$needle" ]] && ! printf '%s' "$out" | grep -q -- "$needle"; then ok=0; fi
+  if (( ok == 1 )); then
+    printf '  \033[32m✓\033[0m %s\n' "$label"
+  else
+    printf '  \033[31m✗\033[0m %s (exit %s, wanted %s)\n' "$label" "$status" "$want"
+    printf '      output: %s\n' "$out"
+    failures=$((failures + 1))
+  fi
+}
+
+passing='{"s":{"test_results":{"a":{"status":"Success"},"b":{"status":"Success"},"c":{"status":"Success"},"d":{"status":"Success"},"e":{"status":"Success"}}}}'
+report_case "a clean report of five tests is agreement" 0 "$passing" "agrees"
+
+# The shape that broke it: a revert reason carrying an escaped quote, which is what forge emits for
+# assertEq failures on strings. Interpolated into Python source it stops being JSON.
+escaped='{"s":{"test_results":{"a":{"status":"Success"},"b":{"status":"Success"},"c":{"status":"Success"},"d":{"status":"Success"},"test_TypeHashesAreTheContractsOwn":{"status":"Failure","reason":"assertion failed: expected \"CHANNEL_CONFIG_TYPEHASH()\""}}}}'
+report_case "a failure with an escaped quote names the test" 1 "$escaped" "test_TypeHashesAreTheContractsOwn"
+
+# A triple quote would have ended the literal outright.
+triple='{"s":{"test_results":{"a":{"status":"Success"},"b":{"status":"Success"},"c":{"status":"Success"},"d":{"status":"Success"},"test_Digests":{"status":"Failure","reason":"got \"\"\" instead"}}}}'
+report_case "a failure containing a triple quote names the test" 1 "$triple" "test_Digests"
+
+# A newline in a decoded trace, which forge emits for a reverting call.
+newline='{"s":{"test_results":{"a":{"status":"Success"},"b":{"status":"Success"},"c":{"status":"Success"},"d":{"status":"Success"},"test_Roles":{"status":"Failure","reason":"revert\n  at X402Escrow"}}}}'
+report_case "a failure containing a newline names the test" 1 "$newline" "test_Roles"
+
+report_case "a report of the wrong size is a misconfiguration" 2 \
+  '{"s":{"test_results":{"a":{"status":"Success"}}}}' "expected 5"
+
+report_case "output that is not a report at all is not a silent pass" 1 "Error: no such profile" ""
 
 (( failures == 0 )) || exit 1
