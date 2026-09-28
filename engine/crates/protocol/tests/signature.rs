@@ -705,3 +705,52 @@ fn the_published_code_list_is_a_set_and_not_an_order() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn unrecoverable_outranks_wrong_signer() -> TestResult {
+    // The ordered pair the multi-violation vectors cannot reach: a syntactically invalid signature
+    // never gets as far as recovery, so no input can be both malformed and a wrong signer. This is
+    // the remaining pair, and the wrong answer is the interesting one. An implementation that
+    // compares before checking recovery reports WrongSigner with a recovered address of zero, which
+    // is the same mistake as treating "not the zero address" as proof a signature is genuine
+    // (Jay, on #86; ADR-0012 rules 9 and 10).
+    let vectors = load()?;
+    let invalid = section(&vectors, "invalid")?;
+    let digest = hash(invalid, "digest")?;
+    let expected = address(invalid, "expected_signer")?;
+
+    let case = group(invalid, "signatures")?
+        .iter()
+        .find(|c| text(c, "code").is_ok_and(|code| code == "SIG_UNRECOVERABLE"))
+        .ok_or("no SIG_UNRECOVERABLE fixture")?;
+    let signature =
+        Signature::from_bytes(&alloy_primitives::hex::decode(text(case, "signature")?)?)?;
+
+    // Recovery itself fails, so verification must report that and not a comparison.
+    assert_eq!(signature.recover(digest), Err(ProtocolError::Unrecoverable));
+    assert_eq!(
+        signature.verify(digest, expected),
+        Err(ProtocolError::Unrecoverable)
+    );
+
+    // And explicitly not a stranger, whatever address the caller names.
+    for named in [expected, Address::ZERO, Address::repeat_byte(0x33)] {
+        assert_eq!(
+            signature.verify(digest, named),
+            Err(ProtocolError::Unrecoverable),
+            "an unrecoverable signature is never a wrong signer"
+        );
+    }
+
+    // The two stages of the order, as the file states them.
+    let staged = group(invalid, "check_order_after_recovery")?;
+    assert_eq!(
+        staged
+            .iter()
+            .map(|c| c.as_str().unwrap_or_default())
+            .collect::<Vec<_>>(),
+        vec!["SIG_UNRECOVERABLE", "SIG_WRONG_SIGNER"],
+        "ordered by data dependency: a failed recovery leaves nothing to compare"
+    );
+    Ok(())
+}

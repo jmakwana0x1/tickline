@@ -15,6 +15,20 @@ import { describe, expect, it } from 'vitest';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+/** Every code the signature policy publishes, in the enum's declaration order (ADR-0012). */
+const SIGNATURE_CODES = [
+  'SIG_LENGTH',
+  'SIG_COMPACT',
+  'SIG_RECOVERY_ID',
+  'SIG_R_ZERO',
+  'SIG_S_ZERO',
+  'SIG_R_ABOVE_ORDER',
+  'SIG_S_ABOVE_ORDER',
+  'SIG_HIGH_S',
+  'SIG_UNRECOVERABLE',
+  'SIG_WRONG_SIGNER',
+];
+
 interface Vectors {
   schema: number;
   provenance: { versions: Record<string, string>; generator: string };
@@ -142,6 +156,7 @@ describe('the rule order', () => {
       invalid: {
         codes: string[];
         check_order: string[];
+        check_order_after_recovery: string[];
         precedence: Array<{ code: string; violations: string[]; signature: string }>;
         precedence_codes: string[];
       };
@@ -158,15 +173,20 @@ describe('the rule order', () => {
       'SIG_HIGH_S',
     ]);
 
-    // Every ordered rule is a published code, and exactly one published code is NOT in the order:
-    // SIG_UNRECOVERABLE is decided after every syntactic check has passed, by recovery itself, so it
-    // has no position among them. Naming it here is the point; a plain set comparison would have
-    // hidden why the two lists differ in length.
-    for (const code of v.invalid.check_order) {
-      expect(v.invalid.codes).toContain(code);
+    // The order has two stages: eight rules decided from the bytes alone, then two that need the
+    // digest as well. The second pair is ordered by data dependency rather than by choice, because a
+    // failed recovery leaves nothing to compare (ADR-0012).
+    expect(v.invalid.check_order_after_recovery).toEqual(['SIG_UNRECOVERABLE', 'SIG_WRONG_SIGNER']);
+
+    // Together the two stages are the whole order, and every entry is a published code.
+    const whole = [...v.invalid.check_order, ...v.invalid.check_order_after_recovery];
+    expect(new Set(whole).size).toBe(whole.length);
+    for (const code of whole) {
+      expect(SIGNATURE_CODES).toContain(code);
     }
-    const outsideTheOrder = v.invalid.codes.filter((c) => !v.invalid.check_order.includes(c));
-    expect(outsideTheOrder).toEqual(['SIG_UNRECOVERABLE']);
+    expect(whole.length).toBe(SIGNATURE_CODES.length);
+
+    // And the published order is neither stage, which is the trap worth pinning.
     expect(v.invalid.check_order).not.toEqual(v.invalid.codes);
   });
 

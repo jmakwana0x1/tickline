@@ -172,9 +172,15 @@ change, and this states something it left implicit.
 7. `s` is at or above the curve order (`SIG_S_ABOVE_ORDER`)
 8. `s` is above `n/2` (`SIG_HIGH_S`)
 
-`SIG_UNRECOVERABLE` has no position in this list: it is decided after every rule above has passed, by
-recovery itself. `SIG_WRONG_SIGNER` likewise, one step later still, when the recovered address is
-compared to the expected one.
+Those eight decide from **the bytes alone**. Two more follow, and they have positions too:
+
+9. no public key corresponds to this signature and digest (`SIG_UNRECOVERABLE`)
+10. a key was recovered and it is not the expected signer (`SIG_WRONG_SIGNER`)
+
+Their order is fixed by **data dependency rather than by choice**: a failed recovery leaves nothing to
+compare against, so 9 cannot follow 10. Saying they have "no position" would invite a future reader to
+treat the tail as arbitrary and swap it (Jay, on #86). The split that matters is where the digest
+enters: rules 1 to 8 need only the signature, 9 and 10 need the message too.
 
 Two of these are substantive rather than arbitrary. **Length before the scalars**, so a 64-byte buffer
 of zeros is reported as a compact signature and not as a zero `r`: the client's mistake is the
@@ -197,3 +203,11 @@ vectors exist to catch.
 Four multi-violation vectors now pin it, run by all three stacks, and the guard was checked by
 swapping `r` and `s` in the Solidity library: `ScalarSAboveOrder()` where the vectors say
 `ScalarRZero()`, a failure in one line.
+
+**What those four do not reach.** A syntactically invalid signature never gets as far as `ecrecover`,
+so no input can violate one of rules 1 to 8 *and* be a wrong signer: the vectors pin precedence among
+the first eight only. The remaining ordered pair, 9 against 10, is pinned separately by running the
+unrecoverable fixture through verification rather than recovery. It must answer `SIG_UNRECOVERABLE`,
+and the wrong answer is the interesting one: an implementation that compares before checking recovery
+reports `SIG_WRONG_SIGNER` with a recovered address of zero, which is the same mistake as treating
+"not the zero address" as proof a signature is genuine.

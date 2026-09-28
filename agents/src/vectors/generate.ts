@@ -723,10 +723,13 @@ async function main(): Promise<void> {
       precedence,
       precedence_codes: precedence.map((c) => c.code),
       check_order: checkOrder,
+      check_order_after_recovery: ['SIG_UNRECOVERABLE', 'SIG_WRONG_SIGNER'],
       check_order_note:
-        'The order the rules are applied (ADR-0012). SIGNATURE_ERROR_CODES is the published SET of ' +
-        'codes and its array order is the enum declaration order, which is not this. A reader could ' +
-        'take one for the other, so both are in the file and a test asserts they differ.',
+        'Two stages. check_order is decided from the bytes alone; check_order_after_recovery needs ' +
+        'the digest as well, and its two entries are ordered by data dependency rather than by ' +
+        'choice, since a failed recovery leaves nothing to compare (ADR-0012). Together they are the ' +
+        'whole order. SIGNATURE_ERROR_CODES is the published SET of codes and its array order is the ' +
+        'enum declaration order, which is neither stage.',
       codes_note:
         'The same codes as `signatures[].code`, as a flat array: Solidity reads JSON without ' +
         'JSONPath wildcards, so the count has to come from the file rather than from a constant in ' +
