@@ -627,3 +627,65 @@ fn every_invalid_vector_is_rejected_with_its_code() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn the_first_rule_violated_is_the_one_reported() -> TestResult {
+    // Every other invalid vector breaks exactly one rule, so nothing asserted the order until this
+    // test: reorder either stack and all of them still pass, while Rust and Solidity hand a client
+    // two different codes for identical bytes. That is the divergence the vectors exist to catch
+    // (Jay, on #80), and ADR-0012 now states the order as a numbered list.
+    let vectors = load()?;
+    let invalid = section(&vectors, "invalid")?;
+    let digest = hash(invalid, "digest")?;
+    let expected = address(invalid, "expected_signer")?;
+
+    let cases = group(invalid, "precedence")?;
+    assert_eq!(cases.len(), 4, "one case per ordering decision");
+
+    for case in cases {
+        let code = text(case, "code")?;
+        let bytes = alloy_primitives::hex::decode(text(case, "signature")?)?;
+
+        // Each of these breaks at least two rules, so the code says which check ran first.
+        let violations = group(case, "violations")?;
+        assert!(violations.len() >= 2, "{code} must break more than one rule to say anything");
+
+        let refused = match Signature::from_bytes(&bytes) {
+            Err(error) => error,
+            Ok(signature) => match signature.verify(digest, expected) {
+                Err(error) => error,
+                Ok(()) => return Err(format!("{code} was accepted").into()),
+            },
+        };
+        assert_eq!(refused.code(), code, "{}", text(case, "why")?);
+    }
+    Ok(())
+}
+
+#[test]
+fn the_published_code_list_is_a_set_and_not_an_order() -> TestResult {
+    // SIGNATURE_ERROR_CODES is the published set of codes. Its array order is the order the enum
+    // declares the variants, which is NOT the order the rules are checked in, and a reader could
+    // easily take one for the other (Jay, on #80). ADR-0012 says so; this makes it observable.
+    let vectors = load()?;
+    let check_order = group(section(&vectors, "invalid")?, "check_order")?;
+    assert_eq!(check_order.len(), 8, "eight rules, in the order they are applied");
+
+    let published: Vec<&str> = SIGNATURE_ERROR_CODES.to_vec();
+    let ordered: Vec<&str> =
+        check_order.iter().map(|c| c.as_str().unwrap_or_default()).collect();
+
+    // Every rule in the check order is a published code.
+    for code in &ordered {
+        assert!(published.contains(code), "{code} is not in SIGNATURE_ERROR_CODES");
+    }
+
+    // And the two sequences differ, which is the whole point: if they ever coincide, this test
+    // still passes, but the assertion above keeps the sets aligned and ADR-0012 keeps the order.
+    assert_ne!(
+        ordered,
+        published.iter().take(ordered.len()).copied().collect::<Vec<_>>(),
+        "the published list is declaration order, not check order; ADR-0012 states the latter"
+    );
+    Ok(())
+}
