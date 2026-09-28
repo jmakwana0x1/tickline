@@ -67,8 +67,6 @@ esac
 
 # --force is not optional: forge caches which tests it found per profile, so without it a fork run
 # after a default-profile run reports "No tests found" while `--list` shows every one of them.
-# PIPESTATUS, not $?: through a pipe the latter is the redactor's status, which is always 0, so
-# every failing run would have looked like a passing one with odd output.
 # Captured without a pipe, so $? is forge's own status: through a pipe it would be the redactor's,
 # which is always 0, and every failing run would have looked like a passing one with odd output.
 output="$(cd contracts && FOUNDRY_PROFILE=fork forge test --force --json 2>&1)"
@@ -77,45 +75,7 @@ status=$?
 # Redacted after capture, because the endpoint carries an API key and this output reaches CI logs.
 output="$(printf '%s' "$output" | redact)"
 
-python3 - "$EXPECTED_FORK_TESTS" "$status" <<PY
-import json, sys
-
-expected, status = int(sys.argv[1]), int(sys.argv[2])
-raw = """$output"""
-
-suites = None
-for line in raw.splitlines():
-    line = line.strip()
-    if line.startswith("{"):
-        try:
-            suites = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-if suites is None:
-    print("✗ the fork suite produced no JSON report:", file=sys.stderr)
-    print(raw[-2000:], file=sys.stderr)
-    sys.exit(1 if status else 2)
-
-results = {
-    name: result
-    for suite in suites.values()
-    for name, result in suite.get("test_results", {}).items()
-}
-failed = {name: r for name, r in results.items() if r.get("status") != "Success"}
-
-if len(results) != expected:
-    print(f"✗ the fork suite ran {len(results)} tests, expected {expected}.", file=sys.stderr)
-    print("  A suite that can pass by running nothing is not a suite. Check the fork profile's", file=sys.stderr)
-    print("  match_path and no_match_path, and EXPECTED_FORK_TESTS in this script.", file=sys.stderr)
-    sys.exit(2)
-
-if failed:
-    print(f"✗ the deployment disagrees with the committed vectors ({len(failed)} of {expected}):", file=sys.stderr)
-    for name, result in sorted(failed.items()):
-        print(f"    {name}: {result.get('reason') or result.get('status')}", file=sys.stderr)
-    print("  This is a finding: the escrow may have been redeployed or upgraded. It is a", file=sys.stderr)
-    print("  needs-jay issue plus a check of docs/spec-notes.md, never a vector update to go green.", file=sys.stderr)
-    sys.exit(1)
-
-print(f"✓ the deployment agrees with the committed vectors ({expected} fork tests)")
-PY
+# Through the environment, never through the parser's source. Interpolating the report into an
+# unquoted heredoc made forge's output part of the program, so an escaped quote in a revert reason
+# stopped being JSON before it was parsed, and only ever on a failing run (#82).
+FORK_REPORT="$output" python3 scripts/parse-fork-report.py "$EXPECTED_FORK_TESTS" "$status"
