@@ -13,24 +13,15 @@ root="$(cd "$(dirname "$0")/.." && pwd -P)"
 vectors="${1:-$root/testdata/vectors}"
 config="${2:-$root/.gitleaks.toml}"
 
-python3 - "$vectors" "$config" <<'PY'
+PYTHONPATH="$(cd "$(dirname "$0")" && pwd -P)" python3 - "$vectors" "$config" <<'PY'
 import json, re, sys
 from pathlib import Path
 
+from keyish import is_keyish
+
 vectors, config = Path(sys.argv[1]), Path(sys.argv[2])
 
-# Field names that may hold key material. Short tokens match a whole segment, so "sk" matches
-# "signerSk" and "sk" but not "risk"; long ones match anywhere, so no spelling sidesteps them.
-SEGMENT_TOKENS = {"sk", "priv", "key", "keys"}
-SUBSTRING_TOKENS = ("private", "privkey", "secret", "seed", "mnemonic", "passphrase")
-
-def segments(name):
-    parts = re.split(r"[_\-\s]+", re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name))
-    return {p.lower() for p in parts if p}
-
-def is_keyish(name):
-    low = name.lower()
-    return bool(segments(name) & SEGMENT_TOKENS) or any(t in low for t in SUBSTRING_TOKENS)
+# Key-ish comes from scripts/keyish.py, the one definition in this repo (#85).
 
 def allowed_keys(text):
     # The [allowlist] regexes block of .gitleaks.toml. Entries that are a bare 64-hex literal are
@@ -94,5 +85,5 @@ for p in problems:
     print(f"✗ {p}", file=sys.stderr)
 if problems:
     sys.exit(1)
-print(f"✓ no unlisted key material in {len(files)} vector file(s), against {len(allowed)} allowlisted anvil key(s)")
+print(f"✓ no unlisted key material in {len(files)} vector file(s), against {len(allowed)} allowlisted literal(s) from .gitleaks.toml")
 PY

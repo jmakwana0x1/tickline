@@ -76,6 +76,9 @@ lint:
     @bash scripts/check-no-encode-packed.sh
     # The fork suite's own classification, provable without the network (#80).
     @bash scripts/test-fork-suite.sh
+    # Every text type gitleaks does not scan: md, sql, py, js, txt, extensionless (#81, #85).
+    @bash scripts/test-check-text-secrets.sh
+    @bash scripts/check-text-secrets.sh
 
 # Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
 # staged files, so this is the check to run before a push, and after any history rewrite (#72).

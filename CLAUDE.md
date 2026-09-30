@@ -230,6 +230,16 @@ behaviour is proven where it is enforced: the escrow lets only `payer` withdraw 
 claim, so a reversed-role test cannot pass. Same family as the rule above: a check that cannot see
 the mistake it is meant to catch.
 
+**A 32-byte value in a new file will trip the secret scan, and the scan is right to.** Nothing
+distinguishes a hash from a private key by looking at it, so `evm-private-key` fires on any 64-hex
+literal in a scanned file type. This has happened three times: the S1 fixtures, the vector-secrets
+self-test, and the text-secrets self-test, each time on a value that was public. The honest fixes, in
+order of preference: **build the value** from its parts (`printf`, a `salt(n)` helper, a decimal
+literal), **move it under `testdata/vectors/`**, which is allowlisted because fixed keys are the point
+of a vector file, or **enumerate it in `.gitleaks.toml` with its source**. Never a path allowlist and
+never a relaxed rule. What gitleaks does not scan is covered by
+`scripts/check-text-secrets.sh`, and "key-ish" has one definition, `scripts/keyish.py`.
+
 **Local toolchain.** `just doctor` checks every tool and prints the install command for what is
 missing. `scripts/dev-setup.sh` installs the lot on a fresh Linux/WSL box.
 
