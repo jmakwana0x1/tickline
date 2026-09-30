@@ -72,6 +72,12 @@ required:
 Concurrency: one run per branch, older runs cancelled. `nightly-deep.yml` runs `just deep` and
 `just mutants` on a schedule, and may fail without blocking merges; a failure is reported as an issue.
 
+`coverage-probe.yml` is a `workflow_dispatch`-only diagnostic, no part of `required`: it prints the
+percentage a runner measures for one crate and then every line that runner did not execute, which is
+how a coverage number that differs between CI and a developer's machine gets diffed rather than
+argued about (#89). It runs `just uncovered <crate>`'s script, so the same output is available
+locally by the same name.
+
 ## 4. Labels
 
 Applied by `just gh-bootstrap` from `.github/labels.json`.

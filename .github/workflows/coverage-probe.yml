@@ -1,0 +1,34 @@
+# A diagnostic, never a gate. `check-coverage.sh` reports one percentage; this prints the lines
+# behind it, so two machines that disagree about the same commit can be diffed instead of guessed
+# about (#89, #90). Dispatch only, no part of `required`, reads nothing it does not need.
+name: coverage-probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      crate:
+        description: Engine crate to measure, for example protocol or lmsr
+        required: true
+        default: protocol
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Through the environment, never interpolated into a shell line: a dispatch input is caller
+      # text and `${{ }}` inside `run:` would make it code.
+      CRATE: ${{ inputs.crate }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with: { node: 'false', foundry: 'false', gate-tools: 'true' }
+      - name: the probe's own self-test
+        run: bash scripts/test-uncovered-lines.sh
+      - name: the percentage this runner measures
+        run: bash scripts/check-coverage.sh "$CRATE" 0
+      - name: the lines it did not execute
+        run: bash scripts/uncovered-lines.sh "$CRATE"
