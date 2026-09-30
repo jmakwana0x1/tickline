@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
-import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {TicklineVault} from "../src/TicklineVault.sol";
+import {MockUSDC} from "./mocks/MockUSDC.sol";
+import {Test} from "forge-std/Test.sol";
 
 /// @title TicklineVault: operator registration and bond (#95)
 /// @notice The bond is what every guarantee in CLAUDE.md section 4 is paid from: I12 says a
@@ -176,6 +176,34 @@ contract TicklineVaultOperatorTest is Test {
         vm.expectRevert(TicklineVault.TransferFailed.selector);
         vault.withdrawBond(MIN_BOND);
         vm.stopPrank();
+    }
+
+    /// Which rule fires first is a decision, not an accident: the zero-key check is syntactic and
+    /// the registration check reads state, so the cheap one comes first. Pinned here because the two
+    /// can both apply at once, and because an unpinned order drifts on the next edit (ADR-0015).
+    function test_a_zero_key_outranks_already_registered() public {
+        vm.startPrank(operator);
+        vault.registerOperator(signingKey, MIN_BOND);
+        vm.expectRevert(TicklineVault.ZeroSigningKey.selector);
+        vault.registerOperator(address(0), MIN_BOND);
+        vm.stopPrank();
+    }
+
+    /// Registration is detected by the signing key, never by the bond, which is exactly why a zero
+    /// key is refused: an operator who withdrew everything must stay registered.
+    function test_an_operator_with_a_zero_bond_is_still_registered() public {
+        vm.startPrank(operator);
+        vault.registerOperator(signingKey, 0);
+        vault.increaseBond(MIN_BOND);
+        vm.stopPrank();
+        (, uint128 bond) = vault.operators(operator);
+        assertEq(bond, MIN_BOND, "a zero-bond operator could still raise it");
+    }
+
+    /// A vault built against the zero token can never pay a bond back or a claim out.
+    function test_a_vault_cannot_be_built_with_the_zero_token() public {
+        vm.expectRevert(TicklineVault.ZeroToken.selector);
+        new TicklineVault(address(0), MIN_BOND);
     }
 
     function test_the_bond_is_denominated_in_the_usdc_the_vault_was_built_with() public view {
