@@ -79,6 +79,12 @@ lint:
     # Every text type gitleaks does not scan: md, sql, py, js, txt, extensionless (#81, #85).
     @bash scripts/test-check-text-secrets.sh
     @bash scripts/check-text-secrets.sh
+    # The coverage probe's own classification, provable from hand-written reports (#90).
+    @bash scripts/test-uncovered-lines.sh
+
+# Name the lines a coverage run did not execute, which is what two disagreeing numbers need (#89).
+uncovered crate:
+    @bash scripts/uncovered-lines.sh {{crate}}
 
 # Scan the full history for secrets, as the gitleaks CI job does. The pre-commit hook sees only
 # staged files, so this is the check to run before a push, and after any history rewrite (#72).
