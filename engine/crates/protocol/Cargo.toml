@@ -19,6 +19,9 @@ base64.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
+# The crate verifies and never signs (ADR-0011), so the property suite needs a signer of its own to
+# generate signatures to verify. k256 is already a dependency; this makes it visible to the tests.
+k256.workspace = true
 
 [lints]
 workspace = true
