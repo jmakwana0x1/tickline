@@ -50,6 +50,8 @@ gate_2() {
   step "protocol suites"      ; cargo test "${ENGINE[@]}" -p protocol --all-features
   step "cross-stack vectors"  ; just vectors
   step "protocol mutants"     ; just mutants protocol
+  # The gate measures coverage rather than trusting a number someone once measured by hand (#69).
+  step "protocol coverage >= 95%"; bash scripts/check-coverage.sh protocol 95
 }
 
 gate_3() {
