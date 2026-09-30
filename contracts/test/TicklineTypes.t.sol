@@ -190,6 +190,29 @@ contract TicklineTypesTest is Test {
         }
     }
 
+    /// @notice The first rule violated is the one reported, and Solidity agrees with Rust on which.
+    /// @dev Every other invalid vector breaks exactly one rule, so nothing asserted the order until
+    ///      this test: reorder either stack and all of them still pass, while a client gets two
+    ///      different codes for identical bytes. ADR-0012 states the order as a numbered list.
+    function test_TheFirstRuleViolatedIsTheOneReported() public {
+        bytes32 d = vm.parseJsonBytes32(vectors, ".invalid.digest");
+        address expected = vm.parseJsonAddress(vectors, ".invalid.expected_signer");
+        string[] memory codes = vm.parseJsonStringArray(vectors, ".invalid.precedence_codes");
+        assertEq(codes.length, 4, "one case per ordering decision");
+
+        for (uint256 i = 0; i < codes.length; i++) {
+            string memory at = string.concat(".invalid.precedence[", vm.toString(i), "]");
+            assertEq(
+                vm.parseJsonString(vectors, string.concat(at, ".code")),
+                codes[i],
+                "the flat code list and the entries are one list"
+            );
+            bytes memory signature = vm.parseJsonBytes(vectors, string.concat(at, ".signature"));
+            vm.expectPartialRevert(selectorFor(codes[i]));
+            this.verify(d, signature, expected);
+        }
+    }
+
     function test_WrongSignerIsRejectedByName() public {
         bytes32 d = vm.parseJsonBytes32(vectors, ".invalid.digest");
         bytes memory signature = vm.parseJsonBytes(vectors, ".invalid.wrong_signer.signature");
@@ -198,6 +221,39 @@ contract TicklineTypesTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(TicklineTypes.WrongSigner.selector, other, recovers));
         this.verify(d, signature, other);
+    }
+
+    /// @notice An unrecoverable signature is never reported as a wrong signer.
+    /// @dev The ordered pair the multi-violation vectors cannot reach: a syntactically invalid
+    ///      signature never gets as far as `ecrecover`, so no input is both malformed and a wrong
+    ///      signer. The wrong answer here is the instructive one, and Solidity is where it is most
+    ///      tempting: `ecrecover` returns the zero address on failure, so an implementation that
+    ///      compares before checking would report `WrongSigner(expected, address(0))`
+    ///      (ADR-0012 rules 9 and 10).
+    function test_UnrecoverableOutranksWrongSigner() public {
+        bytes32 d = vm.parseJsonBytes32(vectors, ".invalid.digest");
+        bytes memory signature = unrecoverableSignature();
+
+        // Whatever address the caller names, including the zero address ecrecover returns on failure.
+        address[3] memory named =
+            [vm.parseJsonAddress(vectors, ".invalid.expected_signer"), address(0), address(0x33)];
+        for (uint256 i = 0; i < named.length; i++) {
+            vm.expectPartialRevert(TicklineTypes.Unrecoverable.selector);
+            this.verify(d, signature, named[i]);
+        }
+    }
+
+    /// @dev The SIG_UNRECOVERABLE fixture, found by code rather than by index.
+    function unrecoverableSignature() internal view returns (bytes memory) {
+        string[] memory codes = vm.parseJsonStringArray(vectors, ".invalid.codes");
+        for (uint256 i = 0; i < codes.length; i++) {
+            if (keccak256(bytes(codes[i])) == keccak256("SIG_UNRECOVERABLE")) {
+                return vm.parseJsonBytes(
+                    vectors, string.concat(".invalid.signatures[", vm.toString(i), "].signature")
+                );
+            }
+        }
+        revert("no SIG_UNRECOVERABLE fixture");
     }
 
     /// @dev An external wrapper, so `vm.expectRevert` sees a call boundary.

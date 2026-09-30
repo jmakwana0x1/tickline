@@ -89,6 +89,66 @@
       "SIG_HIGH_S",
       "SIG_UNRECOVERABLE"
     ],
+    "precedence": [
+      {
+        "code": "SIG_COMPACT",
+        "violations": [
+          "64 bytes",
+          "r is zero",
+          "s is zero"
+        ],
+        "why": "Length is decided before the scalars are looked at, so a 64-byte buffer of zeros is a compact signature and not a zero r.",
+        "signature": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "code": "SIG_R_ZERO",
+        "violations": [
+          "r is zero",
+          "s is at the curve order"
+        ],
+        "why": "r is checked before s.",
+        "signature": "0x0000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd03641411b"
+      },
+      {
+        "code": "SIG_R_ABOVE_ORDER",
+        "violations": [
+          "r is at the curve order",
+          "s is zero"
+        ],
+        "why": "r before s again, and within r, zero before range: r is not zero here, so the range check is what fires.",
+        "signature": "0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd036414100000000000000000000000000000000000000000000000000000000000000001b"
+      },
+      {
+        "code": "SIG_RECOVERY_ID",
+        "violations": [
+          "v is a bare recovery id",
+          "s is above n/2"
+        ],
+        "why": "v is checked before any scalar, so a 0/1 recovery id is reported even when s is malleable.",
+        "signature": "0xcd57798c13f498545d2766b349523573dc276432c03b16d05466d7797f6275a0c84c07c7242239adec706a8331dfd3e535e50311ecec8d78ae1f071058c2f71f00"
+      }
+    ],
+    "precedence_codes": [
+      "SIG_COMPACT",
+      "SIG_R_ZERO",
+      "SIG_R_ABOVE_ORDER",
+      "SIG_RECOVERY_ID"
+    ],
+    "check_order": [
+      "SIG_COMPACT",
+      "SIG_LENGTH",
+      "SIG_RECOVERY_ID",
+      "SIG_R_ZERO",
+      "SIG_R_ABOVE_ORDER",
+      "SIG_S_ZERO",
+      "SIG_S_ABOVE_ORDER",
+      "SIG_HIGH_S"
+    ],
+    "check_order_after_recovery": [
+      "SIG_UNRECOVERABLE",
+      "SIG_WRONG_SIGNER"
+    ],
+    "check_order_note": "Two stages. check_order is decided from the bytes alone; check_order_after_recovery needs the digest as well, and its two entries are ordered by data dependency rather than by choice, since a failed recovery leaves nothing to compare (ADR-0012). Together they are the whole order. SIGNATURE_ERROR_CODES is the published SET of codes and its array order is the enum declaration order, which is neither stage.",
     "codes_note": "The same codes as `signatures[].code`, as a flat array: Solidity reads JSON without JSONPath wildcards, so the count has to come from the file rather than from a constant in the test.",
     "signatures": [
       {

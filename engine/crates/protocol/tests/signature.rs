@@ -627,3 +627,130 @@ fn every_invalid_vector_is_rejected_with_its_code() -> TestResult {
     );
     Ok(())
 }
+
+#[test]
+fn the_first_rule_violated_is_the_one_reported() -> TestResult {
+    // Every other invalid vector breaks exactly one rule, so nothing asserted the order until this
+    // test: reorder either stack and all of them still pass, while Rust and Solidity hand a client
+    // two different codes for identical bytes. That is the divergence the vectors exist to catch
+    // (Jay, on #80), and ADR-0012 now states the order as a numbered list.
+    let vectors = load()?;
+    let invalid = section(&vectors, "invalid")?;
+    let digest = hash(invalid, "digest")?;
+    let expected = address(invalid, "expected_signer")?;
+
+    let cases = group(invalid, "precedence")?;
+    assert_eq!(cases.len(), 4, "one case per ordering decision");
+
+    for case in cases {
+        let code = text(case, "code")?;
+        let bytes = alloy_primitives::hex::decode(text(case, "signature")?)?;
+
+        // Each of these breaks at least two rules, so the code says which check ran first.
+        let violations = group(case, "violations")?;
+        assert!(
+            violations.len() >= 2,
+            "{code} must break more than one rule to say anything"
+        );
+
+        let refused = match Signature::from_bytes(&bytes) {
+            Err(error) => error,
+            Ok(signature) => match signature.verify(digest, expected) {
+                Err(error) => error,
+                Ok(()) => return Err(format!("{code} was accepted").into()),
+            },
+        };
+        assert_eq!(refused.code(), code, "{}", text(case, "why")?);
+    }
+    Ok(())
+}
+
+#[test]
+fn the_published_code_list_is_a_set_and_not_an_order() -> TestResult {
+    // SIGNATURE_ERROR_CODES is the published set of codes. Its array order is the order the enum
+    // declares the variants, which is NOT the order the rules are checked in, and a reader could
+    // easily take one for the other (Jay, on #80). ADR-0012 says so; this makes it observable.
+    let vectors = load()?;
+    let check_order = group(section(&vectors, "invalid")?, "check_order")?;
+    assert_eq!(
+        check_order.len(),
+        8,
+        "eight rules, in the order they are applied"
+    );
+
+    let published: Vec<&str> = SIGNATURE_ERROR_CODES.to_vec();
+    let ordered: Vec<&str> = check_order
+        .iter()
+        .map(|c| c.as_str().unwrap_or_default())
+        .collect();
+
+    // Every rule in the check order is a published code.
+    for code in &ordered {
+        assert!(
+            published.contains(code),
+            "{code} is not in SIGNATURE_ERROR_CODES"
+        );
+    }
+
+    // And the two sequences differ, which is the whole point: if they ever coincide, this test
+    // still passes, but the assertion above keeps the sets aligned and ADR-0012 keeps the order.
+    assert_ne!(
+        ordered,
+        published
+            .iter()
+            .take(ordered.len())
+            .copied()
+            .collect::<Vec<_>>(),
+        "the published list is declaration order, not check order; ADR-0012 states the latter"
+    );
+    Ok(())
+}
+
+#[test]
+fn unrecoverable_outranks_wrong_signer() -> TestResult {
+    // The ordered pair the multi-violation vectors cannot reach: a syntactically invalid signature
+    // never gets as far as recovery, so no input can be both malformed and a wrong signer. This is
+    // the remaining pair, and the wrong answer is the interesting one. An implementation that
+    // compares before checking recovery reports WrongSigner with a recovered address of zero, which
+    // is the same mistake as treating "not the zero address" as proof a signature is genuine
+    // (Jay, on #86; ADR-0012 rules 9 and 10).
+    let vectors = load()?;
+    let invalid = section(&vectors, "invalid")?;
+    let digest = hash(invalid, "digest")?;
+    let expected = address(invalid, "expected_signer")?;
+
+    let case = group(invalid, "signatures")?
+        .iter()
+        .find(|c| text(c, "code").is_ok_and(|code| code == "SIG_UNRECOVERABLE"))
+        .ok_or("no SIG_UNRECOVERABLE fixture")?;
+    let signature =
+        Signature::from_bytes(&alloy_primitives::hex::decode(text(case, "signature")?)?)?;
+
+    // Recovery itself fails, so verification must report that and not a comparison.
+    assert_eq!(signature.recover(digest), Err(ProtocolError::Unrecoverable));
+    assert_eq!(
+        signature.verify(digest, expected),
+        Err(ProtocolError::Unrecoverable)
+    );
+
+    // And explicitly not a stranger, whatever address the caller names.
+    for named in [expected, Address::ZERO, Address::repeat_byte(0x33)] {
+        assert_eq!(
+            signature.verify(digest, named),
+            Err(ProtocolError::Unrecoverable),
+            "an unrecoverable signature is never a wrong signer"
+        );
+    }
+
+    // The two stages of the order, as the file states them.
+    let staged = group(invalid, "check_order_after_recovery")?;
+    assert_eq!(
+        staged
+            .iter()
+            .map(|c| c.as_str().unwrap_or_default())
+            .collect::<Vec<_>>(),
+        vec!["SIG_UNRECOVERABLE", "SIG_WRONG_SIGNER"],
+        "ordered by data dependency: a failed recovery leaves nothing to compare"
+    );
+    Ok(())
+}

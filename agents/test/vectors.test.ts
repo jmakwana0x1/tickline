@@ -15,6 +15,20 @@ import { describe, expect, it } from 'vitest';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+/** Every code the signature policy publishes, in the enum's declaration order (ADR-0012). */
+const SIGNATURE_CODES = [
+  'SIG_LENGTH',
+  'SIG_COMPACT',
+  'SIG_RECOVERY_ID',
+  'SIG_R_ZERO',
+  'SIG_S_ZERO',
+  'SIG_R_ABOVE_ORDER',
+  'SIG_S_ABOVE_ORDER',
+  'SIG_HIGH_S',
+  'SIG_UNRECOVERABLE',
+  'SIG_WRONG_SIGNER',
+];
+
 interface Vectors {
   schema: number;
   provenance: { versions: Record<string, string>; generator: string };
@@ -128,5 +142,81 @@ describe('the invalid vectors', () => {
     for (const code of ['SIG_R_ZERO', 'SIG_S_ZERO', 'SIG_HIGH_S', 'SIG_UNRECOVERABLE']) {
       expect(bytesOf(byCode.get(code) ?? '0x'), `${code} is a well-formed length`).toBe(65);
     }
+  });
+});
+
+describe('the rule order', () => {
+  it('is stated in the file, and is not the published code order', () => {
+    // SIGNATURE_ERROR_CODES is a published set whose array order is the enum's declaration order.
+    // The order the rules are *checked* in is different, and a reader could take one for the other,
+    // so both live in the file and this asserts they differ (Jay, on #80).
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as {
+      invalid: {
+        codes: string[];
+        check_order: string[];
+        check_order_after_recovery: string[];
+        precedence: Array<{ code: string; violations: string[]; signature: string }>;
+        precedence_codes: string[];
+      };
+    };
+
+    expect(v.invalid.check_order).toEqual([
+      'SIG_COMPACT',
+      'SIG_LENGTH',
+      'SIG_RECOVERY_ID',
+      'SIG_R_ZERO',
+      'SIG_R_ABOVE_ORDER',
+      'SIG_S_ZERO',
+      'SIG_S_ABOVE_ORDER',
+      'SIG_HIGH_S',
+    ]);
+
+    // The order has two stages: eight rules decided from the bytes alone, then two that need the
+    // digest as well. The second pair is ordered by data dependency rather than by choice, because a
+    // failed recovery leaves nothing to compare (ADR-0012).
+    expect(v.invalid.check_order_after_recovery).toEqual(['SIG_UNRECOVERABLE', 'SIG_WRONG_SIGNER']);
+
+    // Together the two stages are the whole order, and every entry is a published code.
+    const whole = [...v.invalid.check_order, ...v.invalid.check_order_after_recovery];
+    expect(new Set(whole).size).toBe(whole.length);
+    for (const code of whole) {
+      expect(SIGNATURE_CODES).toContain(code);
+    }
+    expect(whole.length).toBe(SIGNATURE_CODES.length);
+
+    // And the published order is neither stage, which is the trap worth pinning.
+    expect(v.invalid.check_order).not.toEqual(v.invalid.codes);
+  });
+
+  it('is exercised by cases that break more than one rule', () => {
+    const v = JSON.parse(
+      readFileSync(resolve(HERE, '../../testdata/vectors/eip712.json'), 'utf8'),
+    ) as {
+      invalid: {
+        check_order: string[];
+        precedence: Array<{ code: string; violations: string[]; signature: string }>;
+        precedence_codes: string[];
+      };
+    };
+
+    expect(v.invalid.precedence_codes).toEqual(v.invalid.precedence.map((c) => c.code));
+    for (const entry of v.invalid.precedence) {
+      // A single-violation case says nothing about order, which is why every other invalid vector
+      // could not catch a reordering.
+      expect(
+        entry.violations.length,
+        `${entry.code} must break more than one rule`,
+      ).toBeGreaterThan(1);
+      expect(v.invalid.check_order).toContain(entry.code);
+    }
+
+    // Each case's code must be the earliest of the rules it breaks, which is the claim being made.
+    const position = (code: string): number => v.invalid.check_order.indexOf(code);
+    expect(position('SIG_COMPACT')).toBeLessThan(position('SIG_R_ZERO'));
+    expect(position('SIG_R_ZERO')).toBeLessThan(position('SIG_S_ZERO'));
+    expect(position('SIG_R_ABOVE_ORDER')).toBeLessThan(position('SIG_S_ZERO'));
+    expect(position('SIG_RECOVERY_ID')).toBeLessThan(position('SIG_HIGH_S'));
   });
 });

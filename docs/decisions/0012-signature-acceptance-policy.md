@@ -155,3 +155,59 @@ declare their reach when they are first used.
 The registry test therefore checks reach per family rather than assuming every code is universal,
 and #67's vector file records each family's reach so the Solidity and TypeScript sides know which
 codes they are obliged to carry.
+
+## Update, 2026-09-28
+
+Made at Jay's direction on #80. Appended rather than edited, per ADR-0001: the policy above did not
+change, and this states something it left implicit.
+
+**The order the rules are checked in, which is part of the decision:**
+
+1. exactly 64 bytes, an EIP-2098 compact signature (`SIG_COMPACT`)
+2. any other wrong length (`SIG_LENGTH`)
+3. `v` outside {27, 28} (`SIG_RECOVERY_ID`)
+4. `r` is zero (`SIG_R_ZERO`)
+5. `r` is at or above the curve order (`SIG_R_ABOVE_ORDER`)
+6. `s` is zero (`SIG_S_ZERO`)
+7. `s` is at or above the curve order (`SIG_S_ABOVE_ORDER`)
+8. `s` is above `n/2` (`SIG_HIGH_S`)
+
+Those eight decide from **the bytes alone**. Two more follow, and they have positions too:
+
+9. no public key corresponds to this signature and digest (`SIG_UNRECOVERABLE`)
+10. a key was recovered and it is not the expected signer (`SIG_WRONG_SIGNER`)
+
+Their order is fixed by **data dependency rather than by choice**: a failed recovery leaves nothing to
+compare against, so 9 cannot follow 10. Saying they have "no position" would invite a future reader to
+treat the tail as arbitrary and swap it (Jay, on #86). The split that matters is where the digest
+enters: rules 1 to 8 need only the signature, 9 and 10 need the message too.
+
+Two of these are substantive rather than arbitrary. **Length before the scalars**, so a 64-byte buffer
+of zeros is reported as a compact signature and not as a zero `r`: the client's mistake is the
+encoding, not the value. **Range before malleability within `s`**, so `s >= n` is reported as out of
+range rather than as high-s: a value that is not a scalar cannot meaningfully be called the wrong half
+of the curve.
+
+**`SIGNATURE_ERROR_CODES` is a published set, not a precedence order.** Its array order is the order
+the `ProtocolError` variants are declared, which is deliberately not the list above, and a reader could
+easily take one for the other. The set is what the three stacks must agree exists; the list above is
+what they must agree on the sequence of.
+
+### Why it needed writing down
+
+Both stacks already checked in this order, and nothing asserted it. Every invalid vector broke exactly
+one rule, so reordering either implementation left all of them passing while Rust and Solidity handed
+a client two different codes for identical bytes, which is exactly the divergence the cross-stack
+vectors exist to catch.
+
+Four multi-violation vectors now pin it, run by all three stacks, and the guard was checked by
+swapping `r` and `s` in the Solidity library: `ScalarSAboveOrder()` where the vectors say
+`ScalarRZero()`, a failure in one line.
+
+**What those four do not reach.** A syntactically invalid signature never gets as far as `ecrecover`,
+so no input can violate one of rules 1 to 8 *and* be a wrong signer: the vectors pin precedence among
+the first eight only. The remaining ordered pair, 9 against 10, is pinned separately by running the
+unrecoverable fixture through verification rather than recovery. It must answer `SIG_UNRECOVERABLE`,
+and the wrong answer is the interesting one: an implementation that compares before checking recovery
+reports `SIG_WRONG_SIGNER` with a recovered address of zero, which is the same mistake as treating
+"not the zero address" as proof a signature is genuine.
