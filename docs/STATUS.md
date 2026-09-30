@@ -78,9 +78,15 @@ Phase 0 retired this risk: building against a misread x402 spec. Its deliverable
 | viem | 2.56.9, exact | `agents/package.json`, `e2e/package.json`; ADR-0015 |
 | `@x402/core` | 2.27.0, exact | `agents/package.json`; ADR-0015, Q7 on #9 |
 | `@x402/evm` | 2.27.0, exact | `agents/package.json`; declares `viem ^2.48.11`, so the two numbers are unrelated |
-| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4, verified live on Base Sepolia |
-| x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1 |
-| x402 escrow reference | not yet vendored | Phase 3, pinned by commit |
+| `x402BatchSettlement` | `0x4020074e9dF2ce1deE5A9C1b5c3f541D02a10003` (canonical, CREATE2) | `docs/spec-notes.md` §4. Its five type hashes and three digest getters agreed with `testdata/vectors/eip712.json` at Base Sepolia block **47500081**, 2026-09-30 |
+| x402 EIP-712 domain | `x402 Batch Settlement`, version `1` | `docs/spec-notes.md` §1, read from the deployment's own `eip712Domain()` |
+| x402 escrow reference | not vendored, and not going to be | Integrated at the canonical address instead (`docs/spec-notes.md` §4). `contracts/test/fork/` reads it, and `scripts/fork-suite.sh` tells an outage apart from a disagreement |
+
+The block number is **when the agreement was observed, not what it depends on**: the type hashes are
+constants and the digests are pure functions of their inputs, so nothing in the vectors is tied to a
+block. The fork suite therefore reads latest state deliberately, because detecting a redeployed escrow
+is the only thing it can uniquely see, and a pinned block would make it deterministic by making it
+blind (ADR-0015).
 
 ---
 
