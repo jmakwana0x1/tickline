@@ -3,20 +3,44 @@
 The state of the build. **Task state lives in GitHub issues, not here.** This file records
 gates, pins, open questions, and benchmarks.
 
-Last updated: 2026-09-20
+Last updated: 2026-09-30
 
 ---
 
 ## Current phase
 
-**Phase 2: Protocol types and cross-stack vectors.** `.phase` = `2`. Tracking issue #59, labelled
-`needs-jay`: no Phase 2 code is written until the breakdown and decisions D1 to D5 are approved.
+**Phase 3: Contracts.** `.phase` = `3`. Tracking issue #92, labelled `needs-jay`: **Qb, the
+missed-commit path, is unanswered**, so #93 (ADR-0016), #97 (`commitEpoch`) and #101 (the missed-commit
+path) are blocked. #94 asks a scope question of its own. Slices #95, #96 and #103 depend on nothing
+unanswered and are where work starts.
 
-Risk being retired: a signature that verifies in one stack and not another.
+Risk being retired: an operator who lies about committed positions, and a vault that can be drained
+or made to pay twice.
 
-Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006). With `.phase` = `2` that is now
-`just gate 1`, so every PR reruns the `lmsr` mutation and coverage steps; the CI gate job installs
-`uv` and the gate tools for that reason.
+Per-PR CI gates the closed phases (`just gate-closed`, ADR-0006). With `.phase` = `3` that is now
+`just gate 2`, so every PR reruns the `lmsr` and `protocol` mutation and coverage steps and the
+cross-stack vector diff; the CI gate job installs `uv` and the gate tools for that reason. It ran in
+7m46s on the last PR before the bump.
+
+**Phase 2 closed** on 2026-09-30: gate 2 green in CI at `c48d8a8`, release `phase-2`. Phase 2
+retired this risk: a signature that verifies in one stack and not another. Its deliverables:
+
+| Deliverable | State |
+|---|---|
+| `engine/crates/protocol`: EIP-712 domain and digest framing | ✅ #62 |
+| `PositionReceipt`, all four amounts `uint128` | ✅ #64 |
+| Signature acceptance policy, low-s only, `v` rejected not normalized | ✅ #67, ADR-0012 |
+| x402 envelopes, `deny_unknown_fields` everywhere except `extra` | ✅ #78, ADR-0014 |
+| Market id, tagged preimage | ✅ #81, ADR-0013 |
+| `contracts/src/TicklineTypes.sol`, 11 custom errors mapping 1:1 to the engine's codes | ✅ #62, #81 |
+| `testdata/vectors/eip712.json`, one generator, three independent implementations agreeing | ✅ #82, #83, #86, ADR-0015 |
+| Fork suite: the deployed escrow agrees with the committed vectors | ✅ #84, 5 tests, Base Sepolia block 47500081 |
+| Gate 2 with protocol coverage >= 95% | ✅ #88 |
+| ADRs 0011 (deps), 0012 (signature policy), 0013 (market id), 0014 (envelope strictness), 0015 (precedence) | ✅ |
+| Release `phase-2` | ✅ cut at the close commit |
+
+Carried forward: #89 (protocol coverage reads 96.50% in CI against 99.30% locally at the same
+commit; the seed is ruled out, the cause is not yet named), #54 and #77 (Phase 4), #73 (Phase 5).
 
 **Phase 1 closed** on 2026-09-20: gate 1 green in CI at `9fd9d2c`, release `phase-1`. Phase 1
 retired this risk: wrong prices, and insolvent rounding. Its deliverables:
@@ -100,6 +124,7 @@ tracking issue.
 | 2026-09-15 | 0 | `6ed3358` | 8 | 2 | 9 | 1 | First green `just gate 0`, in CI, all 10 checks incl. `required`. Not yet a phase close: `docs/spec-notes.md` open questions are unanswered. |
 | 2026-09-17 | 0 | `44dc50d` | 9 | 2 | 9 | 1 | **Phase 0 close.** CI run 35186404431, all 10 jobs green; `just gh-verify` also green locally with an admin token. Log on #1. |
 | 2026-09-19 | 1 | `9fd9d2c` | 80 | 2 | 9 | 1 | **Phase 1 close.** `phase-gate` run 35447353612, `just gate 1` (phases 0 and 1), 438s. `lmsr`: 66 mutants, 65 caught, 1 unviable, 0 missed; coverage 99.69% of 643 lines; vectors reproduce byte for byte. Log on #31. Only documentation merged between this commit and the close. |
+| 2026-09-30 | 2 | `c48d8a8` | 176 | 16 | 17 | 2 | **Phase 2 close.** `phase-gate` run 36711796268, `just gate 2` (phases 0, 1 and 2), 1532s. `lmsr`: 66 mutants, 0 missed, coverage 99.69% of 643 lines. `protocol`: 91 mutants, 0 missed, coverage 96.50% of 429 lines, which is 12 lines below what the same command measures locally (#89, open). Both vector files reproduce byte for byte; the fork suite agreed with the deployed escrow on all 5 digests. Log on #59. |
 
 ### Guard evidence (Phase 0 exit)
 
