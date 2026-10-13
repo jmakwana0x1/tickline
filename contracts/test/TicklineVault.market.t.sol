@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/Test.sol";
-import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {TicklineTypes} from "../src/TicklineTypes.sol";
 import {TicklineVault} from "../src/TicklineVault.sol";
+import {MockUSDC} from "./mocks/MockUSDC.sol";
+import {Test} from "forge-std/Test.sol";
 
 /// @title TicklineVault: createMarket (#96)
 /// @notice A market is the key every position, commit and claim is filed under, so this slice is
@@ -238,9 +238,7 @@ contract TicklineVaultMarketTest is Test {
         TicklineTypes.MarketParams memory p = _params();
         bytes32 expected = TicklineTypes.marketId(block.chainid, address(vault), p);
         vm.expectEmit(true, true, true, true, address(vault));
-        emit MarketCreated(
-            expected, operator, creator, p.deadline, p.b, p.epochLength, SUBSIDY
-        );
+        emit MarketCreated(expected, operator, creator, p.deadline, p.b, p.epochLength, SUBSIDY);
         vm.prank(operator);
         vault.createMarket(p, SUBSIDY);
     }
